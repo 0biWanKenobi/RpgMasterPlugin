@@ -9,7 +9,10 @@
 		"build": "tsc -noEmit -skipLibCheck && vite build",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"start_test_server": "vite test --host 127.0.0.1 --port 5173 --strictPort --open",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"yalc:add:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} add rpg_shared",
+		"yalc:update:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} update rpg_shared",
+		"yalc:remove:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} remove rpg_shared"
 	},
 	"keywords": [],
 	"license": "0-BSD",
@@ -27,6 +30,7 @@
 	"dependencies": {
 		"@preact/signals": "^2.8.1",
 		"obsidian": "1.12.3",
-		"peerjs": "^1.5.5"
+		"peerjs": "^1.5.5",
+		"rpg_shared": "file:.yalc/rpg_shared"
 	}
 }

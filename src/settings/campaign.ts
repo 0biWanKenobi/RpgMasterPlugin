@@ -1,7 +1,10 @@
 import { Signal } from "@preact/signals";
 import {App, ButtonComponent, Modal, Notice, setIcon, Setting, SettingGroup} from "obsidian";
-import { PluginSetting, TextPluginSetting } from "./index";
 import { CampaignSettings } from "./interfaces";
+import { PluginSetting, TextPluginSetting } from 'rpg_shared/settings/plugin'
+
+
+
 export const initCampaignIdSetting = (
     setting: Setting,
     value: string

@@ -1,10 +1,10 @@
 import {computed, Signal} from "@preact/signals";
 import {App, ButtonComponent, Modal, Notice, setIcon, Setting, SettingGroup} from "obsidian";
-import {PluginSetting} from "./index";
 import {DungeonMasterSettings} from "./interfaces";
+import { TextPluginSetting } from "rpg_shared/settings/plugin";
 
 const initDungeonMasterIdSetting = (setting: Setting, value: string) => {
-	return PluginSetting.textual(
+	return TextPluginSetting.build(
 		setting,
 		'Dungeon Master ID',
 		'This will enable sending a connection request to your DM, and accessing their campaigns when they accept.',
@@ -13,7 +13,7 @@ const initDungeonMasterIdSetting = (setting: Setting, value: string) => {
 }
 
 const initDungeonMasterNameSetting = (	setting: Setting, value: string) => {
-	return PluginSetting.textual(
+	return TextPluginSetting.build(
 		setting,
 		'Name',
 		'This will show in the list of your DMs, so you can keep track.',
@@ -73,7 +73,7 @@ export class RemoveDungeonMasterModal extends Modal {
 
 type DmAddOnClickCallback = (dmId: string, dmName: string) => Promise<void>;
 type DmAddPluginSetting = {
-	subscribe:	PluginSetting<string>['subscribe'],
+	subscribe:	TextPluginSetting['subscribe'],
 	setting: Setting,
 	signal: Signal<string>,
 	onAddClicked: (callback: DmAddOnClickCallback) => DmAddPluginSetting 
@@ -83,8 +83,8 @@ export const initAddDungeonMasterOption = (
 	containerEl: HTMLElement,
 )=> {
 
-	let dmIdInput: PluginSetting<string>;
-	let dmNameInput: PluginSetting<string>;
+	let dmIdInput: TextPluginSetting;
+	let dmNameInput: TextPluginSetting;
 	let button: ButtonComponent;
 	new SettingGroup(containerEl)
 		.addSetting((s) => dmIdInput = initDungeonMasterIdSetting(s, ''))

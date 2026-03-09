@@ -1,0 +1,11 @@
+{
+	"id": "rpg-dungeonmaster-plugin",
+	"name": "RPG Dungeon Master Plugin",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "An Obsidian plugin to play RPG games with friends. This is the dungeon master plugin, which connects to the player plugin and sends game state updates.",
+	"author": "Obi Wan Kenobi",
+	"authorUrl": "https://github.com/0biWanKenobi",
+	"fundingUrl": "https://obsidian.md/pricing",
+	"isDesktopOnly": false
+}

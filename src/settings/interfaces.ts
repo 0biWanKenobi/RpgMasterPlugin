@@ -4,7 +4,6 @@ export interface DungeonMasterSettings {
 	id: string;
 	name: string;
 	image?: string;
-	campaigns: string[];
 	lastUpdated: Date;
 }
 

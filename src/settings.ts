@@ -1,18 +1,22 @@
 import { App, PluginSettingTab, setIcon, Setting } from "obsidian";
 import type RPGDungeonMasterPlugin from "main";
 import {CampaignSettings, DungeonMasterSettings} from "./settings/interfaces";
-import { AddCampaignModal, initAddCampaignOption, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
+import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
 import P2PService from "./p2p";
 
 export interface PluginSettings {
-	dungeonMasters: DungeonMasterSettings[];
+	dungeonMaster: DungeonMasterSettings;
 	campaigns: CampaignSettings[];
 	playerPeerId: string;
 	lastUpdated?: Date;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
-	dungeonMasters: [],
+	dungeonMaster: {
+		id: '',
+		name: '',
+		lastUpdated: new Date(),
+	},
 	campaigns: [],
 	playerPeerId: '',
 	lastUpdated: undefined,	

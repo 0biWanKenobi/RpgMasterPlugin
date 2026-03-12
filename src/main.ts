@@ -7,7 +7,7 @@ export default class RPGDungeonMasterPlugin extends Plugin {
 	settings: PluginSettings;
 
 	async onload() {
-		console.log('Loading RPG Character Plugin');
+		console.log('Loading RPG Master Plugin');
 		await this.loadSettings();
 
 		// This adds a settings tab so the user can configure various aspects of the plugin

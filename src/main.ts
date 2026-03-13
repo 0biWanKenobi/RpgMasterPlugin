@@ -1,6 +1,6 @@
 import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, PluginSettings, SettingTab } from './settings';
-
+import './styles.css'
 // Remember to rename these classes and interfaces!
 
 export default class RPGDungeonMasterPlugin extends Plugin {

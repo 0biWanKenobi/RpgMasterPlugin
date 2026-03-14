@@ -23,8 +23,8 @@ body {
 	--group-border-radius: 30px;
 }
 
-.vertical-tab-content .plugin-settings-title {
-	font-size: var(--font-ui-large);
+.rpg-settings-title * {
+	font-size: 20px !important;
 }
 
 .header-with-icon {

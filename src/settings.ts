@@ -35,8 +35,8 @@ export class SettingTab extends PluginSettingTab {
     display(): void {
         const {containerEl} = this;
         containerEl.empty();
-
-        containerEl.createEl('h2', { text: 'RPG DM Plugin Settings', cls: 'plugin-settings-title' });
+		// eslint-disable-next-line obsidianmd/settings-tab/no-problematic-settings-headings
+        new Setting(containerEl).setName('Options').setHeading().setClass('rpg-settings-title')
 
         headerWithIcon(containerEl, 'Campaigns', 'scroll-text');
 		
@@ -74,7 +74,7 @@ export class SettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.addButton( btn => {
-				btn.setButtonText('Add New Campaign')
+				btn.setButtonText('Add new campaign')
 					.onClick(() => addCampaignModal.open())
 			})
 

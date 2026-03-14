@@ -76,7 +76,7 @@ export const initAddDungeonMasterOption = (
 		subscribe: dmIdInput!.subscribe,
 		onAddClicked: (callback: DmAddOnClickCallback) => {
 			button.onClick(async () => {
-				new Notice('Join Request Sent!')
+				new Notice('Join request sent!')
 				await callback(dmIdInput.signal.value, dmNameInput.signal.value);			
 			})
 			return returnedObject;

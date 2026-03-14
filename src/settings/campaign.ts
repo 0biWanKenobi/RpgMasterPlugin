@@ -7,7 +7,7 @@ import { ConfirmModal } from 'rpg_shared/ui/confirmModal'
 export class RemoveCampaignModal extends ConfirmModal {
 	constructor(app: App) {
 		super(app);
-		this.setTitle('Remove Campaign?');
+		this.setTitle('Remove campaign?');
 	}
 	
 }
@@ -25,7 +25,7 @@ export class AddCampaignModal extends Modal {
 	
 	constructor(app: App) {
 		super(app);
-		this.setTitle('Add Campaign');
+		this.setTitle('Add campaign');
 		this.content = initAddCampaignOption(this.contentEl);
 	}
 }

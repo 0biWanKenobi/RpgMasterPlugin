@@ -1,11 +1,16 @@
+import { Linter } from 'eslint';
 import tseslint from 'typescript-eslint';
 import obsidianmd from "eslint-plugin-obsidianmd";
 import globals from "globals";
 import { globalIgnores } from "eslint/config";
 
+const recommendedRules = (obsidianmd.configs?.recommended ?? {}) as Linter.RulesRecord;
+
 export default tseslint.config(
 	{
+		files: ["**/*.{ts,tsx,mts,cts,js,mjs,cjs}"],
 		languageOptions: {
+			parser: tseslint.parser,
 			globals: {
 				...globals.browser,
 			},
@@ -13,17 +18,34 @@ export default tseslint.config(
 				projectService: {
 					allowDefaultProject: [
 						'eslint.config.js',
-						'manifest.json'
+						'manifest.json',
+						'vite.config.mts'
 					]
 				},
 				tsconfigRootDir: import.meta.dirname,
 				extraFileExtensions: ['.json']
 			},
 		},
-	},
-	...(obsidianmd.configs?.recommended ? [obsidianmd.configs.recommended as Parameters<typeof tseslint.config>[0]] : []),
+		plugins: {
+			obsidianmd,
+		},
+		rules: {
+			...recommendedRules,
+			"obsidianmd/ui/sentence-case": [
+				"error",
+				{
+					acronyms: ["RPG", "DM", "ID"],
+					brands: ["Dungeon Master"],
+					enforceCamelCaseLower: true,
+				},
+			],
+		},
+	},		
 	globalIgnores([
 		"node_modules",
+		".yalc",
+		"*.json",
+		"**/*.json",
 		"dist",
 		"esbuild.config.mjs",
 		"eslint.config.js",

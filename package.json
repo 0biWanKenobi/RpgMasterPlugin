@@ -31,6 +31,6 @@
 		"@preact/signals": "^2.8.1",
 		"obsidian": "1.12.3",
 		"peerjs": "^1.5.5",
-		"rpg_shared": "file:.yalc/rpg_shared"
+		"rpg_shared": "link:.yalc/rpg_shared"
 	}
 }

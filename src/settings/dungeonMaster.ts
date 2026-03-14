@@ -32,44 +32,7 @@ export class AddDungeonMasterModal extends Modal {
 	}
 }
 
-export class RemoveDungeonMasterModal extends Modal {
-	private confirmed = false; 
-	
-	private responseResolver = Promise.withResolvers<boolean>();
-	
-	constructor(app: App) {
-		super(app);
-		this.setTitle('Remove Dungeon Master?');
-		
-		const btnContainer = this.contentEl.createEl('div', { cls: 'delete-dm-modal-buttons' })
-		
-		new	ButtonComponent(btnContainer)
-					.setButtonText('Yes')
-					.setWarning()
-					.onClick(() => {
-						this.confirmed = true;
-						this.close();
-					});
-		new	ButtonComponent(btnContainer)
-			.setButtonText('No')
-			.onClick(() => this.close());
-	}
-	
-	onOpen(): Promise<void> | void {
-		this.confirmed = false;
-		return super.onOpen();
-	}
 
-	onClose() {
-		this.responseResolver.resolve(this.confirmed);
-		super.onClose();
-	}
-
-	waitResponse() {
-		super.open();
-		return this.responseResolver.promise;
-	}
-}
 
 type DmAddOnClickCallback = (dmId: string, dmName: string) => Promise<void>;
 type DmAddPluginSetting = {

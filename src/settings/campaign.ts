@@ -4,39 +4,13 @@ import { CampaignSettings } from "./interfaces";
 import { PluginSetting, TextPluginSetting } from 'rpg_shared/settings/plugin'
 import { ConfirmModal } from 'rpg_shared/ui/confirmModal'
 
-
-
-export const initCampaignIdSetting = (
-    setting: Setting,
-    value: string
-) => {
-    // noinspection SpellCheckingInspection -- fix "cmpgn" in the placeholder
-
-	var textSetting = TextPluginSetting.build(
-		setting,
-		'Campaign ID',
-		'This will download the campaign info. Your DM can find it in their campaign settings.',
-		value
-	);
-
-	textSetting.text.setPlaceholder('rpg_cmpgn_id_4c58112a-f325-4397-b5b7-db137ef42414')
-
-	return textSetting;
+export class RemoveCampaignModal extends ConfirmModal {
+	constructor(app: App) {
+		super(app);
+		this.setTitle('Remove Campaign?');
+	}
+	
 }
-
-export const initCampaignNameSetting = (
-    setting: Setting,
-    value: string
-) => {
-
-	return TextPluginSetting.build(
-		setting,
-		'Campaign Name',
-		'Name of this awesome campaign',
-		value
-	);
-}
-
 
 type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
 type CampaignAddPluginSetting = {
@@ -56,14 +30,18 @@ export class AddCampaignModal extends Modal {
 	}
 }
 
-export class RemoveCampaignModal extends ConfirmModal {
-	constructor(app: App) {
-		super(app);
-		this.setTitle('Remove Campaign?');
-	}
-	
-}
+export const initCampaignNameSetting = (
+    setting: Setting,
+    value: string
+) => {
 
+	return TextPluginSetting.build(
+		setting,
+		'Campaign Name',
+		'Name of this awesome campaign',
+		value
+	);
+}
 
 export const initAddCampaignOption = (
 	containerEl: HTMLElement,

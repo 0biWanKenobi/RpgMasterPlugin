@@ -50,44 +50,10 @@ export default class P2PService {
 class MessageHandler {
 	
 	private connection: DataConnection;
-	private characterReceivedCallback: (data: CharacterMessage) => any = (_)=> {};
 	
 	constructor(connection: DataConnection) {
 		this.connection = connection;
-		connection.on("data", (data) => {
-			if(isCharacterMessage(data)) this.characterReceivedCallback(data);			
-		})
-	}
-	
-	public onCharacterReceived (callback :(c: CharacterMessage) => any){
-		this.characterReceivedCallback = callback;	
-	}
-	
-	public requestCharacter(){
-		this.connection.send({
-			id: this.connection.peer,
-			name: 'Johnny Player',
-			sentAt: new Date(),
-			baseType: 'player',
-			type: 'getCharacter',
-		})
-		return this;
 	}
 }
 
 
-class CharacterMessage {
-	public id: string;
-	public name: string;
-	public class: string;
-	public level: number;
-	public readonly type = "CharacterMessage";
-}
-
-function isCharacterMessage  (data: unknown):  data is CharacterMessage {
-	if(typeof data == 'object' && data != null && "type" in data &&  typeof data["type"] == 'string'){
-		return data.type === "CharacterMessage";	
-	}
-	return false;
-	
-}

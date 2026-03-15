@@ -1,12 +1,15 @@
-import { App, PluginSettingTab, setIcon, Setting } from "obsidian";
+import { addIcon, App, ButtonComponent, PluginSettingTab, setIcon, Setting } from "obsidian";
 import type RPGDungeonMasterPlugin from "rpgMasterMain";
-import {CampaignSettings, DungeonMasterSettings} from "./settings/interfaces";
+import {CampaignSettings, DungeonMasterSettings, GDriveSettings} from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
-import P2PService from "./p2p";
+import { Tabs } from "rpg_shared/ui/tabs"
+import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
+import { IconButtonComponent } from "rpg_shared/ui/iconButton";
 
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
 	campaigns: CampaignSettings[];
+	gdriveSettings: GDriveSettings;
 	playerPeerId: string;
 	lastUpdated?: Date;
 }
@@ -18,25 +21,50 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 		lastUpdated: new Date(),
 	},
 	campaigns: [],
+	gdriveSettings: {
+		configured: false,
+		accessToken: '',
+		folderId: '',
+		lastUpdated: new Date(),
+	},
 	playerPeerId: '',
 	lastUpdated: undefined,	
 }
 
 export class SettingTab extends PluginSettingTab {
     plugin: RPGDungeonMasterPlugin;
-    private readonly p2pService: P2PService;
+
+    private tabs: Tabs;
     
     constructor(app: App, plugin: RPGDungeonMasterPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.p2pService = new P2PService(this.plugin.settings.playerPeerId);
+		this.tabs = new Tabs();
 	}
     
     display(): void {
-        const {containerEl} = this;
+		const {containerEl} = this;
         containerEl.empty();
-		// eslint-disable-next-line obsidianmd/settings-tab/no-problematic-settings-headings
-        new Setting(containerEl).setName('Options').setHeading().setClass('rpg-settings-title')
+		
+		this.tabs
+			.addToContainer(containerEl)
+			.addTab('Options', () => {
+				contentsWrapper.empty();
+				this.displayOptions(contentsWrapper);
+			})
+			.addTab('GDrive', () => {
+				contentsWrapper.empty();
+				this.displayGDriveSettings(contentsWrapper);
+			});
+
+		const contentsWrapper = containerEl.createDiv();
+
+
+		this.displayOptions(contentsWrapper);		
+    }
+
+
+	private displayOptions(containerEl: HTMLElement){
 
         headerWithIcon(containerEl, 'Campaigns', 'scroll-text');
 		
@@ -78,18 +106,22 @@ export class SettingTab extends PluginSettingTab {
 					.onClick(() => addCampaignModal.open())
 			})
 
-		// headerWithIcon(containerEl, 'Characters', 'file-user');
-		
-    }
+	}
+
+	private displayGDriveSettings(containerEl: HTMLElement){
+
+		if(!this.plugin.settings.gdriveSettings.configured){
+			headerWithIcon(containerEl, 'Google Drive not configured', 'cloud-off');
+
+			new IconButtonComponent(containerEl)
+				.setButtonText('Connect Google Drive')
+				.addIcon('cloud')
+				.onClick(() => {
+					console.log('Configure GDrive clicked')
+				})
+		}
+
+		new Setting(containerEl).setName('Test').setHeading();
+	}
 }
 
-const headerWithIcon = (parent: HTMLElement, title: string, icon: string) => {
-	const campaignHeader = new Setting(parent)
-	.setName(title)
-	.setClass('header-with-icon')
-	.setHeading();
-	
-	setIcon(campaignHeader.settingEl.createDiv({cls: 'header-icon-wrapper'}), icon);
-
-	return campaignHeader;
-}

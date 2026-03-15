@@ -17,3 +17,10 @@ export interface CampaignSettings {
 	endDate?: Date;
 	lastUpdated: Date;
 }
+
+export interface GDriveSettings {
+	configured: boolean;
+	accessToken: string;
+	folderId: string;
+	lastUpdated: Date;
+}

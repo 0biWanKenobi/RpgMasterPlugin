@@ -29,7 +29,7 @@ const isWatch = process.argv.includes("--watch");
 export default defineConfig(({ mode }) => ({
 	build: {
 		lib: {
-			entry: "src/main.ts",
+			entry: "src/rpgMasterMain.ts",
 			formats: ["cjs"],
 			fileName: () => "main.js",
 			cssFileName: "styles"

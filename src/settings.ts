@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, setIcon, Setting } from "obsidian";
-import type RPGDungeonMasterPlugin from "main";
+import type RPGDungeonMasterPlugin from "rpgMasterMain";
 import {CampaignSettings, DungeonMasterSettings} from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
 import P2PService from "./p2p";

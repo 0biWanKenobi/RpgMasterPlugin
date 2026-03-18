@@ -33,24 +33,25 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 		lastUpdated: new Date(),
 	},
 	playerPeerId: '',
-	lastUpdated: undefined,	
+	lastUpdated: undefined,
 }
 
 export class SettingTab extends PluginSettingTab {
 	plugin: RPGDungeonMasterPlugin;
 
-    private tabs: Tabs;
-    
-    constructor(app: App, plugin: RPGDungeonMasterPlugin) {
+	private tabs: Tabs;
+
+	constructor(app: App, plugin: RPGDungeonMasterPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 		this.tabs = new Tabs();
 	}
-    
-    display(): void {
-		const {containerEl} = this;
-        containerEl.empty();
-		
+
+	display(): void {
+		const { containerEl } = this;
+		containerEl.empty();
+
+
 		this.tabs
 			.addToContainer(containerEl)
 			.addTab('Options', () => {
@@ -65,23 +66,39 @@ export class SettingTab extends PluginSettingTab {
 		const contentsWrapper = containerEl.createDiv();
 
 
-		this.displayOptions(contentsWrapper);		
-    }
+		this.displayOptions(contentsWrapper);
+	}
 
 
-	private displayOptions(containerEl: HTMLElement){
+	private displayOptions(containerEl: HTMLElement) {
 
-        headerWithIcon(containerEl, 'Campaigns', 'scroll-text');
-		
-		const campaignGallery = containerEl.createEl('div', {cls: 'plugin-settings-campaigns-gallery'})
-		
+		headerWithIcon(containerEl, 'You', 'circle-user');
+
+		new Setting(containerEl)
+			.addText(text =>
+				text.setDisabled(true)
+					.setValue(this.plugin.settings.dungeonMaster.id)
+					.setPlaceholder('rpg_mstr_id_4c58112a-f325-4397-b5b7-db137ef42414')
+			)
+			.setDesc('Your unique id, share it with your players so they can add you.')
+			.addButton(btn =>
+				btn
+					.setIcon('files')
+					.setTooltip('Copy ID')
+			)
+
+
+		headerWithIcon(containerEl, 'Campaigns', 'scroll-text');
+
+		const campaignGallery = containerEl.createEl('div', { cls: 'plugin-settings-campaigns-gallery' })
+
 		const removeCampaignModal = new RemoveCampaignModal(this.app);
 
-		for (const campaign of this.plugin.settings.campaigns) {			
-			const galleryItem  = initCampaignGalleryItem(campaignGallery, campaign);
+		for (const campaign of this.plugin.settings.campaigns) {
+			const galleryItem = initCampaignGalleryItem(campaignGallery, campaign);
 			galleryItem.icon.onclick = async () => {
 				const shouldRemove = await removeCampaignModal.waitResponse();
-				if(!shouldRemove) return;
+				if (!shouldRemove) return;
 				const indexToDelete = this.plugin.settings.campaigns
 					.findIndex(d => d.id === galleryItem.id);
 				this.plugin.settings.campaigns.splice(indexToDelete, 1);
@@ -106,7 +123,7 @@ export class SettingTab extends PluginSettingTab {
 		});
 
 		new Setting(containerEl)
-			.addButton( btn => {
+			.addButton(btn => {
 				btn.setButtonText('Add new campaign')
 					.onClick(() => addCampaignModal.open())
 			})

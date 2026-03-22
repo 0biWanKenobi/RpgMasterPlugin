@@ -27,6 +27,7 @@ const external = [
 const isWatch = process.argv.includes("--watch");
 
 export default defineConfig(({ mode }) => ({
+	envPrefix: ["VITE_", "GAUTH_"],
 	build: {
 		lib: {
 			entry: "src/rpgMasterMain.ts",

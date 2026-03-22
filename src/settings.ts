@@ -1,10 +1,11 @@
-import { addIcon, App, ButtonComponent, PluginSettingTab, setIcon, Setting } from "obsidian";
+import { App, PluginSettingTab, Setting } from "obsidian";
 import type RPGDungeonMasterPlugin from "rpgMasterMain";
-import {CampaignSettings, DungeonMasterSettings, GDriveSettings} from "./settings/interfaces";
+import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
-import { Tabs } from "rpg_shared/ui/tabs"
+import { Tabs } from "rpg_shared/ui/tabs";
 import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { IconButtonComponent } from "rpg_shared/ui/iconButton";
+import { connectGoogleDrive } from "rpg_shared/sync/googleDriveAuth";
 
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
@@ -24,7 +25,11 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	gdriveSettings: {
 		configured: false,
 		accessToken: '',
+		refreshToken: '',
+		tokenType: '',
+		scope: '',
 		folderId: '',
+		expiresAt: undefined,
 		lastUpdated: new Date(),
 	},
 	playerPeerId: '',
@@ -32,7 +37,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 }
 
 export class SettingTab extends PluginSettingTab {
-    plugin: RPGDungeonMasterPlugin;
+	plugin: RPGDungeonMasterPlugin;
 
     private tabs: Tabs;
     
@@ -108,20 +113,71 @@ export class SettingTab extends PluginSettingTab {
 
 	}
 
-	private displayGDriveSettings(containerEl: HTMLElement){
-
-		if(!this.plugin.settings.gdriveSettings.configured){
+	private displayGDriveSettings(containerEl: HTMLElement) {
+		if (!this.plugin.settings.gdriveSettings.configured) {
 			headerWithIcon(containerEl, 'Google Drive not configured', 'cloud-off');
 
 			new IconButtonComponent(containerEl)
 				.setButtonText('Connect Google Drive')
 				.addIcon('cloud')
-				.onClick(() => {
-					console.log('Configure GDrive clicked')
-				})
+				.onClick(async () => {
+					const tokenSet = await connectGoogleDrive(this.app, {
+						clientId: import.meta.env.GAUTH_DESKTOP_CLIENT_ID ?? '',
+						clientSecret: import.meta.env.GAUTH_DESKTOP_CLIENT_SECRET ?? '',
+					});
+
+					this.plugin.settings.gdriveSettings.configured = true;
+					this.plugin.settings.gdriveSettings.accessToken = tokenSet.accessToken;
+					this.plugin.settings.gdriveSettings.refreshToken = tokenSet.refreshToken ?? '';
+					this.plugin.settings.gdriveSettings.tokenType = tokenSet.tokenType;
+					this.plugin.settings.gdriveSettings.scope = tokenSet.scope;
+					this.plugin.settings.gdriveSettings.expiresAt = tokenSet.expiresAt;
+					this.plugin.settings.gdriveSettings.lastUpdated = new Date();
+					await this.plugin.saveSettings();
+					this.display();
+				});
+
+			return;
 		}
 
-		new Setting(containerEl).setName('Test').setHeading();
+		headerWithIcon(containerEl, 'Google Drive connected', 'cloud');
+
+		new Setting(containerEl)
+			.setName('Connection status')
+			.setDesc(`Connected. Access token expires ${this.describeAccessTokenExpiry()}.`)
+			.addButton((btn) => {
+				btn.setButtonText('Reconnect')
+					.onClick(async () => {
+						const tokenSet = await connectGoogleDrive(this.app, {
+							clientId: import.meta.env.GAUTH_DESKTOP_CLIENT_ID ?? '',
+							clientSecret: import.meta.env.GAUTH_DESKTOP_CLIENT_SECRET ?? '',
+						});
+
+						this.plugin.settings.gdriveSettings.configured = true;
+						this.plugin.settings.gdriveSettings.accessToken = tokenSet.accessToken;
+						this.plugin.settings.gdriveSettings.refreshToken = tokenSet.refreshToken ?? this.plugin.settings.gdriveSettings.refreshToken;
+						this.plugin.settings.gdriveSettings.tokenType = tokenSet.tokenType;
+						this.plugin.settings.gdriveSettings.scope = tokenSet.scope;
+						this.plugin.settings.gdriveSettings.expiresAt = tokenSet.expiresAt;
+						this.plugin.settings.gdriveSettings.lastUpdated = new Date();
+						await this.plugin.saveSettings();
+						this.display();
+					});
+			});
+	}
+
+	private describeAccessTokenExpiry() {
+		const expiresAt = this.plugin.settings.gdriveSettings.expiresAt;
+		if (!expiresAt) {
+			return "soon";
+		}
+
+		const remainingMs = expiresAt - Date.now();
+		if (remainingMs <= 0) {
+			return "soon";
+		}
+
+		const remainingMinutes = Math.ceil(remainingMs / 60_000);
+		return `in about ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`;
 	}
 }
-

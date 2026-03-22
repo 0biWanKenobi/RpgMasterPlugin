@@ -21,6 +21,10 @@ export interface CampaignSettings {
 export interface GDriveSettings {
 	configured: boolean;
 	accessToken: string;
+	refreshToken: string;
+	tokenType: string;
+	scope: string;
 	folderId: string;
+	expiresAt?: number;
 	lastUpdated: Date;
 }

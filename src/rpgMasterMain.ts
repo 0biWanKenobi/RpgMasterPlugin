@@ -4,6 +4,7 @@ import './styles.css'
 import "rpg_shared/styles.css";
 
 export default class RPGDungeonMasterPlugin extends Plugin {
+	//@ts-ignore
 	settings: PluginSettings;
 	
 
@@ -12,6 +13,10 @@ export default class RPGDungeonMasterPlugin extends Plugin {
 		await this.loadSettings();
 
 		const settingTab = new SettingTab(this.app, this);
+
+		this.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
+			console.log(params)
+		})
 
 		this.addSettingTab(settingTab);
 

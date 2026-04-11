@@ -137,22 +137,7 @@ export class SettingTab extends PluginSettingTab {
 			new IconButtonComponent(containerEl)
 				.setButtonText('Connect Google Drive')
 				.addIcon('cloud')
-				.onClick(async () => {
-					const tokenSet = await connectGoogleDrive(this.app, {
-						clientId: import.meta.env.GAUTH_DESKTOP_CLIENT_ID ?? '',
-						clientSecret: import.meta.env.GAUTH_DESKTOP_CLIENT_SECRET ?? '',
-					});
-
-					this.plugin.settings.gdriveSettings.configured = true;
-					this.plugin.settings.gdriveSettings.accessToken = tokenSet.accessToken;
-					this.plugin.settings.gdriveSettings.refreshToken = tokenSet.refreshToken ?? '';
-					this.plugin.settings.gdriveSettings.tokenType = tokenSet.tokenType;
-					this.plugin.settings.gdriveSettings.scope = tokenSet.scope;
-					this.plugin.settings.gdriveSettings.expiresAt = tokenSet.expiresAt;
-					this.plugin.settings.gdriveSettings.lastUpdated = new Date();
-					await this.plugin.saveSettings();
-					this.display();
-				});
+				.onClick(this.onConnect);
 
 			return;
 		}
@@ -164,23 +149,34 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc(`Connected. Access token expires ${this.describeAccessTokenExpiry()}.`)
 			.addButton((btn) => {
 				btn.setButtonText('Reconnect')
-					.onClick(async () => {
-						const tokenSet = await connectGoogleDrive(this.app, {
-							clientId: import.meta.env.GAUTH_DESKTOP_CLIENT_ID ?? '',
-							clientSecret: import.meta.env.GAUTH_DESKTOP_CLIENT_SECRET ?? '',
-						});
+					.onClick(this.onConnect);
+			});	
+		}
 
-						this.plugin.settings.gdriveSettings.configured = true;
-						this.plugin.settings.gdriveSettings.accessToken = tokenSet.accessToken;
-						this.plugin.settings.gdriveSettings.refreshToken = tokenSet.refreshToken ?? this.plugin.settings.gdriveSettings.refreshToken;
-						this.plugin.settings.gdriveSettings.tokenType = tokenSet.tokenType;
-						this.plugin.settings.gdriveSettings.scope = tokenSet.scope;
-						this.plugin.settings.gdriveSettings.expiresAt = tokenSet.expiresAt;
-						this.plugin.settings.gdriveSettings.lastUpdated = new Date();
-						await this.plugin.saveSettings();
-						this.display();
-					});
-			});
+
+	private async onConnect(){
+		const tokenSet = await connectGoogleDrive(this.app, {
+			clientId: import.meta.env.GAUTH_DESKTOP_CLIENT_ID ?? '',
+			clientSecret: import.meta.env.GAUTH_DESKTOP_CLIENT_SECRET ?? '',
+		});
+		
+		this.plugin.settings.gdriveSettings = tokenSet 
+		? {
+			...tokenSet,
+			configured: true,
+			refreshToken: tokenSet.refreshToken ?? '',
+			expiresAt: tokenSet.expiresAt ?? 3600,
+			lastUpdated:new Date(),
+			folderId: '' // TODO
+		}: {
+			...this.plugin.settings.gdriveSettings,
+			configured: false,
+			lastUpdated:new Date(),
+			folderId: '' // TODO
+		}
+
+		await this.plugin.saveSettings();
+		this.display();
 	}
 
 	private describeAccessTokenExpiry() {

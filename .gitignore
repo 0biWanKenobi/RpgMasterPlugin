@@ -26,3 +26,4 @@ data.json
 yalc.lock
 
 /styles.css
+*.env

@@ -1,5 +1,5 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
-import type RPGDungeonMasterPlugin from "rpgMasterMain";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import type RPGDungeonMasterPlugin from "./rpgMasterMain";
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
 import { Tabs } from "rpg_shared/ui/tabs";
@@ -137,7 +137,7 @@ export class SettingTab extends PluginSettingTab {
 			new IconButtonComponent(containerEl)
 				.setButtonText('Connect Google Drive')
 				.addIcon('cloud')
-				.onClick(this.onConnect);
+				.onClick(() => this.onConnect(this.app));
 
 			return;
 		}
@@ -149,31 +149,34 @@ export class SettingTab extends PluginSettingTab {
 			.setDesc(`Connected. Access token expires ${this.describeAccessTokenExpiry()}.`)
 			.addButton((btn) => {
 				btn.setButtonText('Reconnect')
-					.onClick(this.onConnect);
+					.onClick(() => this.onConnect(this.app));
 			});	
 		}
 
 
-	private async onConnect(){
-		const tokenSet = await connectGoogleDrive(this.app, {
-			clientId: import.meta.env.GAUTH_DESKTOP_CLIENT_ID ?? '',
-			clientSecret: import.meta.env.GAUTH_DESKTOP_CLIENT_SECRET ?? '',
-		});
-		
-		this.plugin.settings.gdriveSettings = tokenSet 
-		? {
-			...tokenSet,
-			configured: true,
-			refreshToken: tokenSet.refreshToken ?? '',
-			expiresAt: tokenSet.expiresAt ?? 3600,
-			lastUpdated:new Date(),
-			folderId: '' // TODO
-		}: {
-			...this.plugin.settings.gdriveSettings,
-			configured: false,
-			lastUpdated:new Date(),
-			folderId: '' // TODO
+	private async onConnect(app: App){
+		const response = await connectGoogleDrive(
+			app,
+			import.meta.env.VITE_GAUTH_URL
+		);
+
+		const stopListening = this.plugin.onTokenSet((set) => {
+			if(set == "set"){
+				new Notice("Token saved")
+				response.modal.setStatus("Operation completed, you can close this window", "check-check");
+				response.modal.setButtonsAfterLogin();
+			}
+			else if(set == "error") {
+				new Notice("Error: token not saved")
+				response.modal.setStatus("Something went wrong, close this window and try again.", "circle-x")
+			}
+		})
+
+		if(await response.cancelled) {
+			new Notice("Setup cancelled")
 		}
+		
+		stopListening();
 
 		await this.plugin.saveSettings();
 		this.display();

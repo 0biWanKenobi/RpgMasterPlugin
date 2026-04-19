@@ -6,6 +6,10 @@ import { Tabs } from "rpg_shared/ui/tabs";
 import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { IconButtonComponent } from "rpg_shared/ui/iconButton";
 import { connectGoogleDrive } from "rpg_shared/sync/googleDriveAuth";
+import {
+	clearGoogleDriveSetupContext,
+	createGoogleDriveSetupContext,
+} from "./googleDriveProtocol";
 
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
@@ -24,8 +28,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	campaigns: [],
 	gdriveSettings: {
 		configured: false,
-		accessToken: '',
-		refreshToken: '',
 		tokenType: '',
 		scope: '',
 		folderId: '',
@@ -155,9 +157,16 @@ export class SettingTab extends PluginSettingTab {
 
 
 	private async onConnect(app: App){
+		this.plugin.resetTokenStatus();
+
+		const setupContext = createGoogleDriveSetupContext(
+			app,
+			import.meta.env.VITE_GAUTH_URL,
+		);
+
 		const response = await connectGoogleDrive(
 			app,
-			import.meta.env.VITE_GAUTH_URL
+			setupContext.authUrl,
 		);
 
 		const stopListening = this.plugin.onTokenSet((set) => {
@@ -173,6 +182,7 @@ export class SettingTab extends PluginSettingTab {
 		})
 
 		if(await response.cancelled) {
+			clearGoogleDriveSetupContext(app, setupContext.setupId);
 			new Notice("Setup cancelled")
 		}
 		

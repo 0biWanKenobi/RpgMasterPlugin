@@ -41,20 +41,16 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 export class SettingTab extends PluginSettingTab {
 	plugin: RPGDungeonMasterPlugin;
 
-	private tabs: Tabs;
-
 	constructor(app: App, plugin: RPGDungeonMasterPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.tabs = new Tabs();
 	}
-
+	
 	display(): void {
 		const { containerEl } = this;
 		containerEl.empty();
-
-
-		this.tabs
+		
+		new Tabs()
 			.addToContainer(containerEl)
 			.addTab('Options', () => {
 				contentsWrapper.empty();

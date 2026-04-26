@@ -44,7 +44,7 @@ export default defineConfig(({ mode }) => ({
 		emptyOutDir: false,
 		sourcemap: mode === "development" ? "inline" : false,
 		minify: mode !== "development",
-		target: "es2018",
+		target: "esnext",
 		rollupOptions: {
 			external,
 			plugins: mode === "development"

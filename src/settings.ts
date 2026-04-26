@@ -10,6 +10,7 @@ import {
 	clearGoogleDriveSetupContext,
 	createGoogleDriveSetupContext,
 } from "./googleDriveProtocol";
+import { MASTER_PLUGIN } from "./capability";
 
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
@@ -38,12 +39,17 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	lastUpdated: undefined,
 }
 
-export class SettingTab extends PluginSettingTab {
-	plugin: RPGDungeonMasterPlugin;
+class SettingTab extends PluginSettingTab {
+	#plugin: RPGDungeonMasterPlugin;
 
 	constructor(app: App, plugin: RPGDungeonMasterPlugin) {
 		super(app, plugin);
-		this.plugin = plugin;
+		this.#plugin = plugin;
+		Object.seal(this);
+	}
+
+	get #pgsettings (){
+		return this.#plugin.getSettings(MASTER_PLUGIN)
 	}
 	
 	display(): void {
@@ -54,28 +60,28 @@ export class SettingTab extends PluginSettingTab {
 			.addToContainer(containerEl)
 			.addTab('Options', () => {
 				contentsWrapper.empty();
-				this.displayOptions(contentsWrapper);
+				this.#displayOptions(contentsWrapper);
 			})
 			.addTab('GDrive', () => {
 				contentsWrapper.empty();
-				this.displayGDriveSettings(contentsWrapper);
+				this.#displayGDriveSettings(contentsWrapper);
 			});
 
 		const contentsWrapper = containerEl.createDiv();
 
 
-		this.displayOptions(contentsWrapper);
+		this.#displayOptions(contentsWrapper);
 	}
 
 
-	private displayOptions(containerEl: HTMLElement) {
+	#displayOptions(containerEl: HTMLElement) {
 
 		headerWithIcon(containerEl, 'You', 'circle-user');
 
 		new Setting(containerEl)
 			.addText(text =>
 				text.setDisabled(true)
-					.setValue(this.plugin.settings.dungeonMaster.id)
+					.setValue(this.#pgsettings.dungeonMaster.id)
 					.setPlaceholder('rpg_mstr_id_4c58112a-f325-4397-b5b7-db137ef42414')
 			)
 			.setDesc('Your unique id, share it with your players so they can add you.')
@@ -92,22 +98,22 @@ export class SettingTab extends PluginSettingTab {
 
 		const removeCampaignModal = new RemoveCampaignModal(this.app);
 
-		for (const campaign of this.plugin.settings.campaigns) {
+		for (const campaign of this.#pgsettings.campaigns) {
 			const galleryItem = initCampaignGalleryItem(campaignGallery, campaign);
 			galleryItem.icon.onclick = async () => {
 				const shouldRemove = await removeCampaignModal.waitResponse();
 				if (!shouldRemove) return;
-				const indexToDelete = this.plugin.settings.campaigns
+				const indexToDelete = this.#pgsettings.campaigns
 					.findIndex(d => d.id === galleryItem.id);
-				this.plugin.settings.campaigns.splice(indexToDelete, 1);
-				await this.plugin.saveSettings();
+				this.#pgsettings.campaigns.splice(indexToDelete, 1);
+				await this.#plugin.saveSettings();
 				this.display();
 			}
 		}
 
 		const addCampaignModal = new AddCampaignModal(this.app);
 		addCampaignModal.content.onAddClicked(async (cmpgnId, cmpgnName) => {
-			this.plugin.settings.campaigns.push({
+			this.#pgsettings.campaigns.push({
 				id: cmpgnId,
 				name: cmpgnName,
 				masterId: '',
@@ -115,7 +121,7 @@ export class SettingTab extends PluginSettingTab {
 				startDate: new Date(),
 				lastUpdated: new Date(),
 			});
-			await this.plugin.saveSettings();
+			await this.#plugin.saveSettings();
 			this.display();
 			addCampaignModal.close();
 		});
@@ -128,14 +134,14 @@ export class SettingTab extends PluginSettingTab {
 
 	}
 
-	private displayGDriveSettings(containerEl: HTMLElement) {
-		if (!this.plugin.settings.gdriveSettings.configured) {
+	#displayGDriveSettings(containerEl: HTMLElement) {
+		if (!this.#pgsettings.gdriveSettings.configured) {
 			headerWithIcon(containerEl, 'Google Drive not configured', 'cloud-off');
 
 			new IconButtonComponent(containerEl)
 				.setButtonText('Connect Google Drive')
 				.addIcon('cloud')
-				.onClick(() => this.onConnect(this.app));
+				.onClick(() => this.#onConnect(this.app));
 
 			return;
 		}
@@ -144,16 +150,16 @@ export class SettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Connection status')
-			.setDesc(`Connected. Access token expires ${this.describeAccessTokenExpiry()}.`)
+			.setDesc(`Connected. Access token expires ${this.#describeAccessTokenExpiry()}.`)
 			.addButton((btn) => {
 				btn.setButtonText('Reconnect')
-					.onClick(() => this.onConnect(this.app));
+					.onClick(() => this.#onConnect(this.app));
 			});	
 		}
 
 
-	private async onConnect(app: App){
-		this.plugin.resetTokenStatus();
+	async #onConnect(app: App){
+		this.#plugin.resetTokenStatus();
 
 		const setupContext = createGoogleDriveSetupContext(
 			app,
@@ -165,7 +171,7 @@ export class SettingTab extends PluginSettingTab {
 			setupContext.authUrl,
 		);
 
-		const stopListening = this.plugin.onTokenSet((set) => {
+		const stopListening = this.#plugin.onTokenSet((set) => {
 			if(set == "set"){
 				new Notice("Token saved")
 				response.modal.setStatus("Operation completed, you can close this window", "check-check");
@@ -184,12 +190,12 @@ export class SettingTab extends PluginSettingTab {
 		
 		stopListening();
 
-		await this.plugin.saveSettings();
+		await this.#plugin.saveSettings();
 		this.display();
 	}
 
-	private describeAccessTokenExpiry() {
-		const expiresAt = this.plugin.settings.gdriveSettings.expiresAt;
+	#describeAccessTokenExpiry() {
+		const expiresAt = this.#pgsettings.gdriveSettings.expiresAt;
 		if (!expiresAt) {
 			return "soon";
 		}
@@ -203,3 +209,7 @@ export class SettingTab extends PluginSettingTab {
 		return `in about ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`;
 	}
 }
+
+Object.freeze(SettingTab.prototype);
+
+export {SettingTab}

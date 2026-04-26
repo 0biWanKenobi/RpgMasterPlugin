@@ -29,9 +29,10 @@ export class AddDungeonMasterModal extends Modal {
 		super(app);
 		this.setTitle('Add Dungeon Master');
 		this.content = initAddDungeonMasterOption(this.contentEl);
+		Object.seal(this)
 	}
 }
-
+Object.freeze(AddDungeonMasterModal.prototype)
 
 
 type DmAddOnClickCallback = (dmId: string, dmName: string) => Promise<void>;

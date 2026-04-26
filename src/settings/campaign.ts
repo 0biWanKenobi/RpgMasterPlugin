@@ -8,9 +8,11 @@ export class RemoveCampaignModal extends ConfirmModal {
 	constructor(app: App) {
 		super(app);
 		this.setTitle('Remove campaign?');
-	}
-	
+		Object.seal(this)
+	}	
 }
+
+Object.freeze(RemoveCampaignModal.prototype)
 
 type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
 type CampaignAddPluginSetting = {
@@ -27,8 +29,11 @@ export class AddCampaignModal extends Modal {
 		super(app);
 		this.setTitle('Add campaign');
 		this.content = initAddCampaignOption(this.contentEl);
+		Object.seal(this)
 	}
 }
+
+Object.freeze(AddCampaignModal.prototype)
 
 export const initCampaignNameSetting = (
     setting: Setting,

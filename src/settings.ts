@@ -106,7 +106,7 @@ class SettingTab extends PluginSettingTab {
 				const indexToDelete = this.#pgsettings.campaigns
 					.findIndex(d => d.id === galleryItem.id);
 				this.#pgsettings.campaigns.splice(indexToDelete, 1);
-				await this.#plugin.saveSettings();
+				await this.#plugin.saveSettings(MASTER_PLUGIN);
 				this.display();
 			}
 		}
@@ -121,7 +121,7 @@ class SettingTab extends PluginSettingTab {
 				startDate: new Date(),
 				lastUpdated: new Date(),
 			});
-			await this.#plugin.saveSettings();
+			await this.#plugin.saveSettings(MASTER_PLUGIN);
 			this.display();
 			addCampaignModal.close();
 		});
@@ -159,7 +159,7 @@ class SettingTab extends PluginSettingTab {
 
 
 	async #onConnect(app: App){
-		this.#plugin.resetTokenStatus();
+		this.#plugin.resetTokenStatus(MASTER_PLUGIN);
 
 		const setupContext = createGoogleDriveSetupContext(
 			app,
@@ -181,7 +181,7 @@ class SettingTab extends PluginSettingTab {
 				new Notice("Error: token not saved")
 				response.modal.setStatus("Something went wrong, close this window and try again.", "circle-x")
 			}
-		})
+		}, MASTER_PLUGIN)
 
 		if(await response.cancelled) {
 			clearGoogleDriveSetupContext(app, setupContext.setupId);
@@ -190,7 +190,7 @@ class SettingTab extends PluginSettingTab {
 		
 		stopListening();
 
-		await this.#plugin.saveSettings();
+		await this.#plugin.saveSettings(MASTER_PLUGIN);
 		this.display();
 	}
 

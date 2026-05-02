@@ -33,11 +33,13 @@ class RPGDungeonMasterPlugin extends Plugin {
 		return this.#tokenIsSet.value;
 	}
 
-	public onTokenSet(callback: (v: TokenStatus) => void){
+	public onTokenSet(callback: (v: TokenStatus) => void, token: typeof MASTER_PLUGIN){
+		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		return this.#tokenIsSet.subscribe(callback)
 	}
 
-	public resetTokenStatus() {
+	public resetTokenStatus(token: typeof MASTER_PLUGIN) {
+		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		this.#tokenIsSet.value = "idle";
 	}
 
@@ -65,7 +67,8 @@ class RPGDungeonMasterPlugin extends Plugin {
 		this.#settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<PluginSettings>);
 	}
 
-	async saveSettings() {
+	async saveSettings(token: typeof MASTER_PLUGIN) {
+		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		await this.saveData(this.#settings);
 	}
 
@@ -90,7 +93,7 @@ class RPGDungeonMasterPlugin extends Plugin {
 				tokenSet,
 			);
 			clearGoogleDriveSetupContext(this.app, configuration.setup_id);
-			await this.saveSettings();
+			await this.saveSettings(MASTER_PLUGIN);
 			this.#tokenIsSet.value = "set";
 			new Notice("Google Drive connected")
 		} catch (error) {

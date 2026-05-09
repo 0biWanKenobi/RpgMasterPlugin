@@ -3,6 +3,7 @@ import {App, ButtonComponent, Modal, Notice, setIcon, Setting, SettingGroup} fro
 import { CampaignSettings } from "./interfaces";
 import { PluginSetting, TextPluginSetting } from 'rpg_shared/settings/plugin'
 import { ConfirmModal } from 'rpg_shared/ui/confirmModal'
+import {sc_randUUID} from 'rpg_shared/crypto'
 
 export class RemoveCampaignModal extends ConfirmModal {
 	constructor(app: App) {
@@ -70,7 +71,7 @@ export const initAddCampaignOption = (
 		onAddClicked: (callback: CampaignOnClickCallback) => {
 			button.onClick(async () => {				
 				new Notice('Campaign created!')
-				const campaignId = `rpg_cmpgn_id_${crypto.randomUUID()}`;
+				const campaignId = `rpg_cmpgn_id_${sc_randUUID()}`;
 				await callback(campaignId, campaignNameInput!.signal.value)	
 			});
 			return setting

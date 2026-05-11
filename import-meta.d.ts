@@ -14,3 +14,5 @@ declare module "obsidian" {
 		deleteSecret(id: string): boolean;
 	}	
 }
+
+declare const RPG_MASTER_PLUGIN_VERSION: string;

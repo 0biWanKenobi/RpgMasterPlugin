@@ -10,6 +10,8 @@ import {
 	persistGoogleDriveTokens,
 } from './googleDriveProtocol';
 import { MASTER_PLUGIN } from './capability';
+import { RPG_MASTER_PLUGIN_VERSION } from '../import-meta';
+import { encryptGoogleDriveTokenSet } from 'rpg_shared/sync/googleDriveTokenCrypto';
 
 type RpgNexusConfiguration = {
 	action: string,
@@ -22,30 +24,37 @@ type TokenStatus = "idle"|"set"|"error";
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;
 	
-	#tokenIsSet = signal<TokenStatus>("idle");
+	tokenStatus = signal<TokenStatus>("idle");
+	#password: string | undefined;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
 		Object.seal(this)
 	}
 
-	public get isTokenSet(){
-		return this.#tokenIsSet.value;
-	}
-
 	public onTokenSet(callback: (v: TokenStatus) => void, token: typeof MASTER_PLUGIN){
 		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
-		return this.#tokenIsSet.subscribe(callback)
+			return this.tokenStatus.subscribe(callback)
+	}
+	
+	public setPassword(p: string, token: typeof MASTER_PLUGIN){
+		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
+		this.#password = p;
 	}
 
 	public resetTokenStatus(token: typeof MASTER_PLUGIN) {
 		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
-		this.#tokenIsSet.value = "idle";
+		this.tokenStatus.value = "idle";
 	}
 
 	async onload() {
 		console.log('Loading RPG Master Plugin');
+
 		await this.#loadSettings();
+
+		if(!this.#settings || this.#settings.version < RPG_MASTER_PLUGIN_VERSION) {
+			// welcome user
+		}
 
 		const settingTab = new SettingTab(this.app, this);
 
@@ -75,10 +84,12 @@ class RPGDungeonMasterPlugin extends Plugin {
 	async #handleRpgNexusConfiguration(configuration: RpgNexusConfiguration) {
 
 		if (!configuration.setup_id || !configuration.payload) {
-			this.#tokenIsSet.value = "error";
+			this.tokenStatus.value = "error";
 			new Notice("Google token payload missing from callback.")
 			return;
 		}
+
+		if(!this.#password) return;
 
 		try {
 			const tokenSet = await decryptGoogleDrivePayload(
@@ -91,13 +102,14 @@ class RPGDungeonMasterPlugin extends Plugin {
 				this.app,
 				this.#settings.gdriveSettings,
 				tokenSet,
+				this.#password
 			);
 			clearGoogleDriveSetupContext(this.app, configuration.setup_id);
 			await this.saveSettings(MASTER_PLUGIN);
-			this.#tokenIsSet.value = "set";
+			this.tokenStatus.value = "set";
 			new Notice("Google Drive connected")
 		} catch (error) {
-			this.#tokenIsSet.value = "error";
+			this.tokenStatus.value = "error";
 			new Notice(
 				error instanceof Error
 					? `Google token decryption failed: ${error.message}`

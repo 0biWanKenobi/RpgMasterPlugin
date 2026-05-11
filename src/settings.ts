@@ -5,12 +5,13 @@ import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "
 import { Tabs } from "rpg_shared/ui/tabs";
 import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { IconButtonComponent } from "rpg_shared/ui/iconButton";
-import { connectGoogleDrive } from "rpg_shared/sync/googleDriveAuth";
+import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal"
 import {
 	clearGoogleDriveSetupContext,
 	createGoogleDriveSetupContext,
 } from "./googleDriveProtocol";
 import { MASTER_PLUGIN } from "./capability";
+import { UserPasswordModal } from "./settings/userPasswordModal";
 
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
@@ -18,6 +19,7 @@ export interface PluginSettings {
 	gdriveSettings: GDriveSettings;
 	playerPeerId: string;
 	lastUpdated?: Date;
+	version: string;
 }
 
 export const DEFAULT_SETTINGS: PluginSettings = {
@@ -37,6 +39,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	},
 	playerPeerId: '',
 	lastUpdated: undefined,
+	version: "1.0.0"
 }
 
 class SettingTab extends PluginSettingTab {
@@ -141,7 +144,11 @@ class SettingTab extends PluginSettingTab {
 			new IconButtonComponent(containerEl)
 				.setButtonText('Connect Google Drive')
 				.addIcon('cloud')
-				.onClick(() => this.#onConnect(this.app));
+				.onClick(async () => {
+
+					const pwdModal = new UserPasswordModal(this.app);
+					const password = await pwdModal.waitResponse();
+				});
 
 			return;
 		}
@@ -157,7 +164,6 @@ class SettingTab extends PluginSettingTab {
 			});	
 		}
 
-
 	async #onConnect(app: App){
 		this.#plugin.resetTokenStatus(MASTER_PLUGIN);
 
@@ -166,24 +172,33 @@ class SettingTab extends PluginSettingTab {
 			import.meta.env.VITE_GAUTH_URL,
 		);
 
-		const response = await connectGoogleDrive(
-			app,
-			setupContext.authUrl,
-		);
+
+		const pwdModal = new UserPasswordModal(app);
+		const password = await pwdModal.waitInput();
+
+		if(!password) { //TODO: check length and complexity
+			new Notice("No password set");
+			return;
+		}
+
+		this.#plugin.setPassword(password, MASTER_PLUGIN);
+
+		const gdriveAuthModal = new GoogleDriveConnectModal(app);
+		const cancelled = gdriveAuthModal.openAsync(setupContext.authUrl);
 
 		const stopListening = this.#plugin.onTokenSet((set) => {
 			if(set == "set"){
 				new Notice("Token saved")
-				response.modal.setStatus("Operation completed, you can close this window", "check-check");
-				response.modal.setButtonsAfterLogin();
+				gdriveAuthModal.setStatus("Operation completed, you can close this window", "check-check");
+				gdriveAuthModal.setButtonsAfterLogin();
 			}
 			else if(set == "error") {
 				new Notice("Error: token not saved")
-				response.modal.setStatus("Something went wrong, close this window and try again.", "circle-x")
+				gdriveAuthModal.setStatus("Something went wrong, close this window and try again.", "circle-x")
 			}
 		}, MASTER_PLUGIN)
 
-		if(await response.cancelled) {
+		if(await cancelled) {
 			clearGoogleDriveSetupContext(app, setupContext.setupId);
 			new Notice("Setup cancelled")
 		}

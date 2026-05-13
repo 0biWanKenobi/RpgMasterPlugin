@@ -12,7 +12,9 @@ interface ImportMetaEnv {
 declare module "obsidian" {
 	interface SecretStorage {
 		deleteSecret(id: string): boolean;
-	}	
+	}
 }
 
-declare const RPG_MASTER_PLUGIN_VERSION: string;
+declare global {
+	const RPG_MASTER_PLUGIN_VERSION: string;
+}

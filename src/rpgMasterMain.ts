@@ -10,7 +10,6 @@ import {
 	persistGoogleDriveTokens,
 } from './googleDriveProtocol';
 import { MASTER_PLUGIN } from './capability';
-import { RPG_MASTER_PLUGIN_VERSION } from '../import-meta';
 import { encryptGoogleDriveTokenSet } from 'rpg_shared/sync/googleDriveTokenCrypto';
 
 type RpgNexusConfiguration = {

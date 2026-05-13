@@ -30,7 +30,7 @@ const isWatch = process.argv.includes("--watch");
 export default defineConfig(({ mode }) => ({
 	envPrefix: ["VITE_", "GAUTH_"],
 	define: {
-		RPG_MASTER_PLUGIN_VERSION: process.env.npm_package_version ?? "1.0.0"
+		RPG_MASTER_PLUGIN_VERSION: JSON.stringify(process.env.npm_package_version ?? "1.0.0"),
 	},
 	build: {
 		lib: {

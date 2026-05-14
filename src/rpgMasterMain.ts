@@ -10,7 +10,7 @@ import {
 	persistGoogleDriveTokens,
 } from './googleDriveProtocol';
 import { MASTER_PLUGIN } from './capability';
-import { encryptGoogleDriveTokenSet } from 'rpg_shared/sync/googleDriveTokenCrypto';
+import { UserPasswordModal } from './settings/userPasswordModal';
 
 type RpgNexusConfiguration = {
 	action: string,
@@ -18,31 +18,25 @@ type RpgNexusConfiguration = {
 	payload?: string,
 }
 
-type TokenStatus = "idle"|"set"|"error";
+type TokenStatus = "idle" | "set" | "pwdinput" | "error";
 
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;
-	
+
 	tokenStatus = signal<TokenStatus>("idle");
-	#password: string | undefined;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
 		Object.seal(this)
 	}
 
-	public onTokenSet(callback: (v: TokenStatus) => void, token: typeof MASTER_PLUGIN){
-		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
-			return this.tokenStatus.subscribe(callback)
-	}
-	
-	public setPassword(p: string, token: typeof MASTER_PLUGIN){
-		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
-		this.#password = p;
+	public onTokenSet(callback: (v: TokenStatus) => void, token: typeof MASTER_PLUGIN) {
+		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
+		return this.tokenStatus.subscribe(callback)
 	}
 
 	public resetTokenStatus(token: typeof MASTER_PLUGIN) {
-		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
+		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		this.tokenStatus.value = "idle";
 	}
 
@@ -51,7 +45,7 @@ class RPGDungeonMasterPlugin extends Plugin {
 
 		await this.#loadSettings();
 
-		if(!this.#settings || this.#settings.version < RPG_MASTER_PLUGIN_VERSION) {
+		if (!this.#settings || this.#settings.version < RPG_MASTER_PLUGIN_VERSION) {
 			// welcome user
 		}
 
@@ -66,8 +60,8 @@ class RPGDungeonMasterPlugin extends Plugin {
 
 	}
 
-	getSettings(token: typeof MASTER_PLUGIN){
-		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
+	getSettings(token: typeof MASTER_PLUGIN) {
+		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		return this.#settings;
 	}
 
@@ -76,7 +70,7 @@ class RPGDungeonMasterPlugin extends Plugin {
 	}
 
 	async saveSettings(token: typeof MASTER_PLUGIN) {
-		if(token !== MASTER_PLUGIN) throw new Error("Unauthorized")
+		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		await this.saveData(this.#settings);
 	}
 
@@ -88,7 +82,15 @@ class RPGDungeonMasterPlugin extends Plugin {
 			return;
 		}
 
-		if(!this.#password) return;
+		this.tokenStatus.value = "pwdinput";
+		const pwdModal = new UserPasswordModal(this.app);
+		const password = await pwdModal.waitInput();
+
+		if (!password) { //TODO: check length and complexity
+			new Notice("No password set");
+			this.tokenStatus.value = "error"
+			return;
+		}
 
 		try {
 			const tokenSet = await decryptGoogleDrivePayload(
@@ -97,11 +99,11 @@ class RPGDungeonMasterPlugin extends Plugin {
 				configuration.payload,
 			);
 
-			this.#settings.gdriveSettings = persistGoogleDriveTokens(
+			this.#settings.gdriveSettings = await persistGoogleDriveTokens(
 				this.app,
 				this.#settings.gdriveSettings,
 				tokenSet,
-				this.#password
+				password
 			);
 			clearGoogleDriveSetupContext(this.app, configuration.setup_id);
 			await this.saveSettings(MASTER_PLUGIN);

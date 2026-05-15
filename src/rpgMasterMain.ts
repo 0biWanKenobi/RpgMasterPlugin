@@ -50,12 +50,6 @@ class RPGDungeonMasterPlugin extends Plugin {
 		}
 
 		const settingTab = new SettingTab(this.app, this);
-
-
-		this.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
-			void this.#handleRpgNexusConfiguration(params as RpgNexusConfiguration);
-		})
-
 		this.addSettingTab(settingTab);
 
 	}
@@ -72,51 +66,6 @@ class RPGDungeonMasterPlugin extends Plugin {
 	async saveSettings(token: typeof MASTER_PLUGIN) {
 		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		await this.saveData(this.#settings);
-	}
-
-	async #handleRpgNexusConfiguration(configuration: RpgNexusConfiguration) {
-
-		if (!configuration.setup_id || !configuration.payload) {
-			this.tokenStatus.value = "error";
-			new Notice("Google token payload missing from callback.")
-			return;
-		}
-
-		this.tokenStatus.value = "pwdinput";
-		const pwdModal = new UserPasswordModal(this.app);
-		const password = await pwdModal.waitInput();
-
-		if (!password) { //TODO: check length and complexity
-			new Notice("No password set");
-			this.tokenStatus.value = "error"
-			return;
-		}
-
-		try {
-			const tokenSet = await decryptGoogleDrivePayload(
-				this.app,
-				configuration.setup_id,
-				configuration.payload,
-			);
-
-			this.#settings.gdriveSettings = await persistGoogleDriveTokens(
-				this.app,
-				this.#settings.gdriveSettings,
-				tokenSet,
-				password
-			);
-			clearGoogleDriveSetupContext(this.app, configuration.setup_id);
-			await this.saveSettings(MASTER_PLUGIN);
-			this.tokenStatus.value = "set";
-			new Notice("Google Drive connected")
-		} catch (error) {
-			this.tokenStatus.value = "error";
-			new Notice(
-				error instanceof Error
-					? `Google token decryption failed: ${error.message}`
-					: "Google token decryption failed.",
-			)
-		}
 	}
 }
 

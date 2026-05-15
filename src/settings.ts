@@ -2,10 +2,8 @@ import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type RPGDungeonMasterPlugin from "./rpgMasterMain";
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
-import { Tabs } from "rpg_shared/ui/tabs";
-import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
-import { IconButtonComponent } from "rpg_shared/ui/iconButton";
-import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal"
+import { Tabs, headerWithIcon, IconButtonComponent, UserPasswordModal } from "rpg_shared/ui";
+import { GoogleDriveConnectModal } from "rpg_shared/sync"
 import {
 	clearGoogleDriveSetupContext,
 	createGoogleDriveSetupContext,
@@ -14,7 +12,6 @@ import {
 } from "./googleDriveProtocol";
 import { MASTER_PLUGIN } from "./capability";
 import { signal } from "@preact/signals";
-import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
 
 type RpgNexusConfiguration = {
 	action: string,

@@ -1,8 +1,8 @@
 import { Signal } from "@preact/signals";
 import {App, ButtonComponent, Modal, Notice, setIcon, Setting, SettingGroup} from "obsidian";
 import { CampaignSettings } from "./interfaces";
-import { PluginSetting, TextPluginSetting } from 'rpg_shared/settings/plugin'
-import { ConfirmModal } from 'rpg_shared/ui/confirmModal'
+import { PluginSetting, TextPluginSetting } from 'rpg_shared/settings'
+import { ConfirmModal } from 'rpg_shared/ui'
 import {sc_randUUID} from 'rpg_shared/crypto'
 
 export class RemoveCampaignModal extends ConfirmModal {

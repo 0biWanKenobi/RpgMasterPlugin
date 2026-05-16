@@ -1,9 +1,22 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import RPGDungeonMasterPlugin from "../rpgMasterMain";
-import { clearGoogleDriveSetupContext, createGoogleDriveSetupContext, decryptGoogleDrivePayload, persistGoogleDriveTokens } from "../googleDriveProtocol";
+import {
+    clearGoogleDriveSetupContext,
+    createGoogleDriveSetupContext,
+    decryptGoogleDrivePayload,
+    GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
+    GOOGLE_DRIVE_REFRESH_TOKEN_SECRET,
+    listFoldersIn,
+    persistGoogleDriveTokens
+} from "../googleDriveProtocol";
 import { signal } from "@preact/signals";
 import { MASTER_PLUGIN } from "../capability";
-import { GoogleDriveConnectModal } from "rpg_shared/sync";
+import {
+    decryptObject,
+    GoogleDriveConnectModal,
+    GoogleDriveTokenSet,
+    refreshGoogleDriveAccessToken
+} from "rpg_shared/sync";
 import { headerWithIcon, IconButtonComponent, UserPasswordModal } from "rpg_shared/ui";
 
 type TokenStatus = "idle" | "set" | "pwdinput" | "error";
@@ -16,16 +29,13 @@ type RpgNexusConfiguration = {
 
 class DriveSyncSettingTab extends PluginSettingTab {
 
-    #app: App;
     #plugin: RPGDungeonMasterPlugin;
-    #containerEl: HTMLElement;
     #tokenStatus = signal<TokenStatus>("idle");
 
     constructor(app: App, plugin: RPGDungeonMasterPlugin, containerEl: HTMLElement) {
         super(app, plugin);
         this.#plugin = plugin;
-        this.#app = app;
-        this.#containerEl = containerEl;
+        this.containerEl = containerEl;
 
         this.#plugin.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
             void this.#onTokenSetReceived(params as RpgNexusConfiguration);
@@ -38,11 +48,19 @@ class DriveSyncSettingTab extends PluginSettingTab {
         return this.#plugin.getSettings(MASTER_PLUGIN)
     }
 
+    get #authExpired() {
+        const expiresAt = this.#pgsettings.gdriveSettings.expiresAt;
+        if (!expiresAt) return "unknown"
+        const remainingMs = expiresAt - Date.now();
+
+        return remainingMs > 10000 ? "no" : "yes"
+    }
+
     display() {
         if (!this.#pgsettings.gdriveSettings.configured) {
-            headerWithIcon(this.#containerEl, 'Google Drive not configured', 'cloud-off');
+            headerWithIcon(this.containerEl, 'Google Drive not configured', 'cloud-off');
 
-            new IconButtonComponent(this.#containerEl)
+            new IconButtonComponent(this.containerEl)
                 .setButtonText('Connect Google Drive')
                 .addIcon('cloud')
                 .onClick(() => this.#onConnect());
@@ -50,23 +68,23 @@ class DriveSyncSettingTab extends PluginSettingTab {
             return;
         }
 
-        headerWithIcon(this.#containerEl, 'Google Drive connected', 'cloud');
+        headerWithIcon(this.containerEl, 'Google Drive connected', 'cloud');
 
-        new Setting(this.#containerEl)
+        new Setting(this.containerEl)
             .setName('Connection status')
-            .setDesc(`Connected. Access token expires ${this.#describeAccessTokenExpiry()}.`)
+            .setDesc(`Connected. Access token expiration: ${this.#describeAccessTokenExpiry()}.`)
             .addButton((btn) => {
                 btn.setButtonText('Reconnect')
                     .onClick(() => this.#onConnect());
             });
 
         if (!this.#pgsettings.gdriveSettings.folderId) {
-            headerWithIcon(this.#containerEl, 'Characters folder not selected', 'folder-x');
+            headerWithIcon(this.containerEl, 'Characters folder not selected', 'folder-x');
 
-            new IconButtonComponent(this.#containerEl)
+            new IconButtonComponent(this.containerEl)
                 .setButtonText('Select Folder')
                 .addIcon('folder-closed')
-                .onClick(() => this.#onConnect());
+                .onClick(() => this.#onSelectCharactersFolder());
 
         }
     }
@@ -75,11 +93,11 @@ class DriveSyncSettingTab extends PluginSettingTab {
         this.#tokenStatus.value = 'idle';
 
         const setupContext = createGoogleDriveSetupContext(
-            this.#app,
+            this.app,
             import.meta.env.VITE_GAUTH_URL,
         );
 
-        const gdriveAuthModal = new GoogleDriveConnectModal(this.#app);
+        const gdriveAuthModal = new GoogleDriveConnectModal(this.app);
         const cancelled = gdriveAuthModal.openAsync(setupContext.authUrl);
 
         const stopListening = this.#tokenStatus.subscribe((set) => {
@@ -102,7 +120,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         })
 
         if (await cancelled) {
-            clearGoogleDriveSetupContext(this.#app, setupContext.setupId);
+            clearGoogleDriveSetupContext(this.app, setupContext.setupId);
             new Notice("Setup cancelled")
         }
 
@@ -121,7 +139,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         }
 
         this.#tokenStatus.value = "pwdinput";
-        const pwdModal = new UserPasswordModal(this.#app);
+        const pwdModal = new UserPasswordModal(this.app);
         const password = await pwdModal.waitInput();
 
         if (!password) { //TODO: check length and complexity
@@ -132,20 +150,17 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
         try {
             const tokenSet = await decryptGoogleDrivePayload(
-                this.#app,
+                this.app,
                 configuration.setup_id,
                 configuration.payload,
             );
 
-            const pluginSettings = this.#plugin.getSettings(MASTER_PLUGIN);
-
-            pluginSettings.gdriveSettings = await persistGoogleDriveTokens(
-                this.#app,
-                pluginSettings.gdriveSettings,
+            await this.#updadeDriveTokens(
+                password,
                 tokenSet,
-                password
             );
-            clearGoogleDriveSetupContext(this.#app, configuration.setup_id);
+
+            clearGoogleDriveSetupContext(this.app, configuration.setup_id);
             await this.#plugin.saveSettings(MASTER_PLUGIN);
             this.#tokenStatus.value = "set";
             new Notice("Google Drive connected")
@@ -160,18 +175,63 @@ class DriveSyncSettingTab extends PluginSettingTab {
     }
 
     #describeAccessTokenExpiry() {
-        const expiresAt = this.#pgsettings.gdriveSettings.expiresAt;
-        if (!expiresAt) {
-            return "soon";
+        if (this.#authExpired == "unknown") {
+            return "unknown";
         }
 
+        if (this.#authExpired == "yes") {
+            return "expired";
+        }
+
+        const expiresAt = this.#pgsettings.gdriveSettings.expiresAt!;
         const remainingMs = expiresAt - Date.now();
-        if (remainingMs <= 0) {
-            return "soon";
-        }
-
         const remainingMinutes = Math.ceil(remainingMs / 60_000);
         return `in about ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`;
+    }
+
+    async #updadeDriveTokens(password: string, tokenSet: GoogleDriveTokenSet) {
+        const pluginSettings = this.#plugin.getSettings(MASTER_PLUGIN);
+
+        pluginSettings.gdriveSettings = await persistGoogleDriveTokens(
+            this.app,
+            pluginSettings.gdriveSettings,
+            tokenSet,
+            password
+        );
+        await this.#plugin.saveSettings(MASTER_PLUGIN);
+    }
+
+    async #onSelectCharactersFolder() {
+
+        const pwdModal = new UserPasswordModal(this.app);
+        const password = await pwdModal.waitInput();
+
+        if (!password) {
+            new Notice("Cancelled")
+            return;
+        }
+
+        if (this.#authExpired == "yes") {
+            const refreshToken: string = await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
+            const tokenSet = await refreshGoogleDriveAccessToken(refreshToken)
+            await this.#updadeDriveTokens(
+                password,
+                tokenSet,
+            );
+        }
+
+        const folders = await listFoldersIn({
+            accessToken: await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) ?? ""),
+            rootFolderId: "root"
+        })
+
+        const root = this.containerEl.createDiv("folders")
+
+        for (const folder of folders) {
+            root.createDiv("folder", el => {
+                el.textContent = folder.name
+            })
+        }
     }
 }
 

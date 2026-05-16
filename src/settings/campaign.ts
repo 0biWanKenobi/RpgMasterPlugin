@@ -1,31 +1,31 @@
 import { Signal } from "@preact/signals";
-import {App, ButtonComponent, Modal, Notice, setIcon, Setting, SettingGroup} from "obsidian";
+import { App, ButtonComponent, Modal, Notice, setIcon, Setting, SettingGroup } from "obsidian";
 import { CampaignSettings } from "./interfaces";
-import { PluginSetting, TextPluginSetting } from 'rpg_shared/settings'
-import { ConfirmModal } from 'rpg_shared/ui'
-import {sc_randUUID} from 'rpg_shared/crypto'
+import { PluginSetting, TextPluginSetting } from 'rpg_shared/settings/plugin'
+import { ConfirmModal } from 'rpg_shared/ui/confirmModal'
+import { sc_randUUID } from 'rpg_shared/crypto'
 
 export class RemoveCampaignModal extends ConfirmModal {
 	constructor(app: App) {
 		super(app);
 		this.setTitle('Remove campaign?');
 		Object.seal(this)
-	}	
+	}
 }
 
 Object.freeze(RemoveCampaignModal.prototype)
 
 type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
 type CampaignAddPluginSetting = {
-	subscribe:	PluginSetting<string>['subscribe'],
+	subscribe: PluginSetting<string>['subscribe'],
 	setting: Setting,
 	signal: Signal<string>,
-	onAddClicked: (callback: CampaignOnClickCallback) => CampaignAddPluginSetting 
+	onAddClicked: (callback: CampaignOnClickCallback) => CampaignAddPluginSetting
 };
 export class AddCampaignModal extends Modal {
-	
+
 	public readonly content: CampaignAddPluginSetting;
-	
+
 	constructor(app: App) {
 		super(app);
 		this.setTitle('Add campaign');
@@ -37,8 +37,8 @@ export class AddCampaignModal extends Modal {
 Object.freeze(AddCampaignModal.prototype)
 
 export const initCampaignNameSetting = (
-    setting: Setting,
-    value: string
+	setting: Setting,
+	value: string
 ) => {
 
 	return TextPluginSetting.build(
@@ -51,14 +51,14 @@ export const initCampaignNameSetting = (
 
 export const initAddCampaignOption = (
 	containerEl: HTMLElement,
-)=> {
+) => {
 
 	let campaignNameInput: PluginSetting<string>;
 	let button: ButtonComponent;
 
 	new SettingGroup(containerEl)
-		.addSetting( s => campaignNameInput = initCampaignNameSetting(s, ''))
-		.addSetting( s => {
+		.addSetting(s => campaignNameInput = initCampaignNameSetting(s, ''))
+		.addSetting(s => {
 			s.addButton(btn => {
 				btn.setButtonText('Create')
 				button = btn;
@@ -69,10 +69,10 @@ export const initAddCampaignOption = (
 		...campaignNameInput!,
 		subscribe: campaignNameInput!.subscribe,
 		onAddClicked: (callback: CampaignOnClickCallback) => {
-			button.onClick(async () => {				
+			button.onClick(async () => {
 				new Notice('Campaign created!')
 				const campaignId = `rpg_cmpgn_id_${sc_randUUID()}`;
-				await callback(campaignId, campaignNameInput!.signal.value)	
+				await callback(campaignId, campaignNameInput!.signal.value)
 			});
 			return setting
 		}
@@ -92,16 +92,16 @@ export const initCampaignGalleryItem = (
 ) => {
 	const dmEl = parent.createEl(
 		'div',
-		{cls: 'plugin-settings-campaign-gallery-item', attr: {'data-campaign-id': setting.id}},
+		{ cls: 'plugin-settings-campaign-gallery-item', attr: { 'data-campaign-id': setting.id } },
 	)
-	dmEl.createEl('div', {text: setting.name, cls: 'plugin-settings-campaign-gallery-item-name'})
-	const iconDiv = dmEl.createEl('div', {cls: 'icon'});
+	dmEl.createEl('div', { text: setting.name, cls: 'plugin-settings-campaign-gallery-item-name' })
+	const iconDiv = dmEl.createEl('div', { cls: 'icon' });
 
 	setIcon(iconDiv, 'trash-2')
-	if(setting.image) {
-		dmEl.createEl('div', {cls: 'plugin-settings-campaign-gallery-item-avatar'})
+	if (setting.image) {
+		dmEl.createEl('div', { cls: 'plugin-settings-campaign-gallery-item-avatar' })
 	}
-	
+
 	return <CampaignGalleryItem>{
 		id: setting.id,
 		item: dmEl,

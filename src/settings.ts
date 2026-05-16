@@ -2,7 +2,8 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import type RPGDungeonMasterPlugin from "./rpgMasterMain";
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
-import { Tabs, headerWithIcon } from "rpg_shared/ui";
+import { Tabs } from "rpg_shared/ui/tabs";
+import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { MASTER_PLUGIN } from "./capability";
 import { DriveSyncSettingTab } from "./settings/driveSync";
 

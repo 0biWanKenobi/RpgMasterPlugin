@@ -12,12 +12,14 @@ import {
 import { signal } from "@preact/signals";
 import { MASTER_PLUGIN } from "../capability";
 import {
-    decryptObject,
-    GoogleDriveConnectModal,
     GoogleDriveTokenSet,
     refreshGoogleDriveAccessToken
-} from "rpg_shared/sync";
-import { headerWithIcon, IconButtonComponent, UserPasswordModal } from "rpg_shared/ui";
+} from "rpg_shared/sync/googleDriveAuth";
+import { IconButtonComponent } from "rpg_shared/ui/iconButton";
+import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
+import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
+import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal";
+import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
 
 type TokenStatus = "idle" | "set" | "pwdinput" | "error";
 

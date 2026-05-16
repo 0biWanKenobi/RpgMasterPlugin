@@ -1,43 +1,16 @@
 import type { App, PluginManifest } from 'obsidian';
-import { Notice, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, type PluginSettings, SettingTab } from './settings';
 import './styles.css'
 import "rpg_shared/styles.css";
-import { signal } from '@preact/signals';
-import {
-	clearGoogleDriveSetupContext,
-	decryptGoogleDrivePayload,
-	persistGoogleDriveTokens,
-} from './googleDriveProtocol';
 import { MASTER_PLUGIN } from './capability';
-import { UserPasswordModal } from './settings/userPasswordModal';
-
-type RpgNexusConfiguration = {
-	action: string,
-	setup_id?: string,
-	payload?: string,
-}
-
-type TokenStatus = "idle" | "set" | "pwdinput" | "error";
 
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;
 
-	tokenStatus = signal<TokenStatus>("idle");
-
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
 		Object.seal(this)
-	}
-
-	public onTokenSet(callback: (v: TokenStatus) => void, token: typeof MASTER_PLUGIN) {
-		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
-		return this.tokenStatus.subscribe(callback)
-	}
-
-	public resetTokenStatus(token: typeof MASTER_PLUGIN) {
-		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
-		this.tokenStatus.value = "idle";
 	}
 
 	async onload() {

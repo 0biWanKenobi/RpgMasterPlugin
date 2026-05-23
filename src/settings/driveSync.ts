@@ -58,6 +58,11 @@ class DriveSyncSettingTab extends PluginSettingTab {
         return remainingMs > 10000 ? "no" : "yes"
     }
 
+    draw(containerEl: HTMLElement) {
+        this.containerEl = containerEl;
+        this.display();
+    }
+
     display() {
         if (!this.#pgsettings.gdriveSettings.configured) {
             headerWithIcon(this.containerEl, 'Google Drive not configured', 'cloud-off');

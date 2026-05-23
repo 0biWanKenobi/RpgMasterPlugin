@@ -157,7 +157,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
                 configuration.payload,
             );
 
-            await this.#updadeDriveTokens(
+            await this.#updateDriveTokens(
                 password,
                 tokenSet,
             );
@@ -191,7 +191,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         return `in about ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`;
     }
 
-    async #updadeDriveTokens(password: string, tokenSet: GoogleDriveTokenSet) {
+    async #updateDriveTokens(password: string, tokenSet: GoogleDriveTokenSet) {
         const pluginSettings = this.#plugin.getSettings(MASTER_PLUGIN);
 
         pluginSettings.gdriveSettings = await persistGoogleDriveTokens(
@@ -215,15 +215,37 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
         if (this.#authExpired == "yes") {
             const refreshToken: string = await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
-            const tokenSet = await refreshGoogleDriveAccessToken(refreshToken)
-            await this.#updadeDriveTokens(
+
+            if (!refreshToken) {
+                new Notice("Invalid password!")
+                return;
+            }
+            const tokenSet = await refreshGoogleDriveAccessToken(
+                import.meta.env.VITE_GAUTH_URL,
+                refreshToken
+            )
+            if (!tokenSet.success) {
+                new Notice("Cannot authenticate");
+                return;
+            }
+
+            await this.#updateDriveTokens(
                 password,
-                tokenSet,
+                {
+                    accessToken: tokenSet.access_token,
+                    refreshToken,
+                    expiresAt: tokenSet.expiresAt
+                },
             );
         }
 
+        const encryptedAccessToken = this.app.secretStorage.getSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) ?? "";
+        const accessToken = await decryptObject<string>(
+            password, encryptedAccessToken
+        );
+
         const folders = await listFoldersIn({
-            accessToken: await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) ?? ""),
+            accessToken,
             rootFolderId: "root"
         })
 

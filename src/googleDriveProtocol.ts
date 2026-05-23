@@ -78,8 +78,6 @@ export async function persistGoogleDriveTokens(
     return {
         ...settings,
         configured: true,
-        tokenType: tokenSet.tokenType,
-        scope: tokenSet.scope,
         expiresAt: tokenSet.expiresAt,
         lastUpdated: new Date(),
     };

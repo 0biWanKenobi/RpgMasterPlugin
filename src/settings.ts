@@ -29,8 +29,6 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	campaigns: [],
 	gdriveSettings: {
 		configured: false,
-		tokenType: '',
-		scope: '',
 		folderId: '',
 		expiresAt: undefined,
 		lastUpdated: new Date(),

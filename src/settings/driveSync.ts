@@ -218,7 +218,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
             return;
         }
 
-        if (this.#authExpired == "yes") {
+        if (this.#authExpired != "no") {
             const refreshToken: string = await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
 
             if (!refreshToken) {

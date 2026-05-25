@@ -34,6 +34,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
     #plugin: RPGDungeonMasterPlugin;
     #tokenStatus = signal<TokenStatus>("idle");
+    #password: string | undefined;
 
     constructor(app: App, plugin: RPGDungeonMasterPlugin, containerEl: HTMLElement) {
         super(app, plugin);
@@ -43,6 +44,17 @@ class DriveSyncSettingTab extends PluginSettingTab {
         this.#plugin.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
             void this.#onTokenSetReceived(params as RpgNexusConfiguration);
         })
+
+        if (this.#authExpired != "no") {
+            (async () => {
+                this.#password = await this.#getUserPassword();
+                if(!this.#password) {
+                    new Notice("Cancelled")
+                    return;
+                }
+                await this.#refreshGoogleAccessToken(this.#password);
+            })()
+        }
 
         Object.seal(this);
     }
@@ -190,7 +202,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
                 configuration.payload,
             );
 
-            await this.#updateDriveTokens(
+            await this.#saveDriveTokens(
                 password,
                 tokenSet,
             );
@@ -224,7 +236,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         return `in about ${remainingMinutes} minute${remainingMinutes === 1 ? "" : "s"}`;
     }
 
-    async #updateDriveTokens(password: string, tokenSet: GoogleDriveTokenSet) {
+    async #saveDriveTokens(password: string, tokenSet: GoogleDriveTokenSet) {
         const pluginSettings = this.#plugin.getSettings(MASTER_PLUGIN);
 
         pluginSettings.gdriveSettings = await persistGoogleDriveTokens(
@@ -236,46 +248,63 @@ class DriveSyncSettingTab extends PluginSettingTab {
         await this.#plugin.saveSettings(MASTER_PLUGIN);
     }
 
-    async #onSelectCharactersFolder() {
+    async #getGoogleAccessToken(password: string){
+   
+        if (this.#authExpired != "no") {
+            await this.#refreshGoogleAccessToken(password);
+        }
 
+        const encryptedAccessToken = this.app.secretStorage.getSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) ?? "";
+        return await decryptObject<string>(
+            password, encryptedAccessToken
+        );
+    }
+
+    async #refreshGoogleAccessToken(password: string){
+        const refreshToken: string = await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
+
+        if (!refreshToken) {
+            new Notice("Invalid password!")
+            return;
+        }
+        const tokenSet = await refreshGoogleDriveAccessToken(
+            import.meta.env.VITE_GAUTH_URL,
+            refreshToken
+        )
+        if (!tokenSet.success) {
+            new Notice("Cannot authenticate");
+            return;
+        }
+
+        await this.#saveDriveTokens(
+            password,
+            {
+                accessToken: tokenSet.access_token,
+                refreshToken,
+                expiresAt: tokenSet.expiresAt
+            },
+        );
+    }
+
+    async #getUserPassword(){
         const pwdModal = new UserPasswordModal(this.app);
-        const password = await pwdModal.waitInput();
+        return await pwdModal.waitInput();
+    }
+
+    async #onSelectCharactersFolder() {
+        const password = await this.#getUserPassword()
 
         if (!password) {
             new Notice("Cancelled")
             return;
         }
 
-        if (this.#authExpired != "no") {
-            const refreshToken: string = await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
+        const accessToken = await this.#getGoogleAccessToken(password);
 
-            if (!refreshToken) {
-                new Notice("Invalid password!")
-                return;
-            }
-            const tokenSet = await refreshGoogleDriveAccessToken(
-                import.meta.env.VITE_GAUTH_URL,
-                refreshToken
-            )
-            if (!tokenSet.success) {
-                new Notice("Cannot authenticate");
-                return;
-            }
-
-            await this.#updateDriveTokens(
-                password,
-                {
-                    accessToken: tokenSet.access_token,
-                    refreshToken,
-                    expiresAt: tokenSet.expiresAt
-                },
-            );
+        if(!accessToken) {
+            new Notice("Login error")
+            return;
         }
-
-        const encryptedAccessToken = this.app.secretStorage.getSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) ?? "";
-        const accessToken = await decryptObject<string>(
-            password, encryptedAccessToken
-        );
 
         const folders = await listFoldersIn({
             accessToken,

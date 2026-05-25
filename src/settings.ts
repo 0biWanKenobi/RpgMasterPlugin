@@ -65,7 +65,6 @@ class SettingTab extends PluginSettingTab {
 				this.#displayOptions(contentsWrapper);
 			})
 			.addTab('GDrive', () => {
-				contentsWrapper.empty();
 				this.#driveSyncTab ??= new DriveSyncSettingTab(this.app, this.#plugin, contentsWrapper)
 				this.#driveSyncTab.draw(contentsWrapper);
 			});

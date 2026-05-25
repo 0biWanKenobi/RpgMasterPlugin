@@ -20,6 +20,7 @@ import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
 import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal";
 import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
+import { DriveFolder } from "rpg_shared/ui/driveFolder/index";
 
 type TokenStatus = "idle" | "set" | "pwdinput" | "error";
 
@@ -64,6 +65,8 @@ class DriveSyncSettingTab extends PluginSettingTab {
     }
 
     display() {
+        const { containerEl } = this;
+		containerEl.empty();
         if (!this.#pgsettings.gdriveSettings.configured) {
             headerWithIcon(this.containerEl, 'Google Drive not configured', 'cloud-off');
 
@@ -81,9 +84,20 @@ class DriveSyncSettingTab extends PluginSettingTab {
             .setName('Connection status')
             .setDesc(`Connected. Access token expiration: ${this.#describeAccessTokenExpiry()}.`)
             .addButton((btn) => {
-                btn.setButtonText('Reconnect')
-                    .onClick(() => this.#onConnect());
-            });
+                btn
+                .setIcon("refresh-ccw")
+                .setTooltip('Reconnect')
+                .onClick(() => this.#onConnect());
+            })
+            .addButton((btn) => {
+                btn
+                .setIcon("log-out")
+                .setTooltip("Disconnect")
+                .setWarning()
+                .onClick(() => this.#onDisconnect())
+            })
+
+        if(this.#authExpired != "no") return;
 
         if (!this.#pgsettings.gdriveSettings.folderId) {
             headerWithIcon(this.containerEl, 'Characters folder not selected', 'folder-x');
@@ -94,6 +108,20 @@ class DriveSyncSettingTab extends PluginSettingTab {
                 .onClick(() => this.#onSelectCharactersFolder());
 
         }
+    }
+
+
+    async #onDisconnect() {
+        this.app.secretStorage.deleteSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET);
+        this.app.secretStorage.deleteSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET);
+        this.#pgsettings.gdriveSettings = {
+            configured: false,
+            folderId: '',
+            lastUpdated: new Date(),
+            expiresAt: undefined
+        }
+        this.#plugin.saveSettings(MASTER_PLUGIN)
+        this.display();
     }
 
     async #onConnect() {
@@ -254,12 +282,16 @@ class DriveSyncSettingTab extends PluginSettingTab {
             rootFolderId: "root"
         })
 
-        const root = this.containerEl.createDiv("folders")
+        const root = this.containerEl.createDiv({
+            cls: "folder-list nav-files-container",
+        })
 
         for (const folder of folders) {
-            root.createDiv("folder", el => {
-                el.textContent = folder.name
-            })
+            new DriveFolder(root)
+                .setLabel(folder.name)
+                .onClick(() => {
+                    console.log(folder.id)
+                })
         }
     }
 }

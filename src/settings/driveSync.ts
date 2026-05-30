@@ -37,10 +37,9 @@ class DriveSyncSettingTab extends PluginSettingTab {
     #tokenStatus = signal<TokenStatus>("idle");
     #password: string | undefined;
 
-    constructor(app: App, plugin: RPGDungeonMasterPlugin, containerEl: HTMLElement) {
+    constructor(app: App, plugin: RPGDungeonMasterPlugin) {
         super(app, plugin);
         this.#plugin = plugin;
-        this.containerEl = containerEl;
 
         this.#plugin.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
             void this.#onTokenSetReceived(params as RpgNexusConfiguration);

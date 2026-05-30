@@ -60,19 +60,13 @@ class SettingTab extends PluginSettingTab {
 
 		new Tabs()
 			.addToContainer(containerEl)
-			.addTab('Options', () => {
-				contentsWrapper.empty();
-				this.#displayOptions(contentsWrapper);
+			.addTab('Options', (container) => {
+				this.#displayOptions(container);
 			})
-			.addTab('Google Drive', () => {
-				this.#driveSyncTab ??= new DriveSyncSettingTab(this.app, this.#plugin, contentsWrapper)
-				this.#driveSyncTab.draw(contentsWrapper);
+			.addTab('Google Drive', (container) => {
+				this.#driveSyncTab ??= new DriveSyncSettingTab(this.app, this.#plugin)
+				this.#driveSyncTab.draw(container);
 			});
-
-		const contentsWrapper = containerEl.createDiv();
-
-
-		this.#displayOptions(contentsWrapper);
 	}
 
 

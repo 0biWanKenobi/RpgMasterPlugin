@@ -7,7 +7,6 @@ import {
     decryptGoogleDrivePayload,
     GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
     GOOGLE_DRIVE_REFRESH_TOKEN_SECRET,
-    listFoldersIn,
     persistGoogleDriveTokens
 } from "../../googleDriveProtocol";
 import { signal } from "@preact/signals";
@@ -22,6 +21,7 @@ import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
 import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal";
 import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
 import { DriveFolder } from "rpg_shared/ui/driveFolder";
+import { FolderSelector } from "./folderSelector";
 
 type TokenStatus = "idle" | "set" | "pwdinput" | "error";
 
@@ -48,7 +48,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         if (this.#authExpired != "no" && areTokensStored(app)) {
             (async () => {
                 this.#password ??= await this.#getUserPassword();
-                if(!this.#password) {
+                if (!this.#password) {
                     new Notice("Cancelled")
                     return;
                 }
@@ -78,7 +78,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
     display() {
         const { containerEl } = this;
-		containerEl.empty();
+        containerEl.empty();
         if (!this.#pgsettings.gdriveSettings.configured) {
             headerWithIcon(this.containerEl, 'Google Drive not configured', 'cloud-off');
 
@@ -97,19 +97,19 @@ class DriveSyncSettingTab extends PluginSettingTab {
             .setDesc(`Connected. Access token expiration: ${this.#describeAccessTokenExpiry()}.`)
             .addButton((btn) => {
                 btn
-                .setIcon("refresh-ccw")
-                .setTooltip('Reconnect')
-                .onClick(() => this.#onConnect());
+                    .setIcon("refresh-ccw")
+                    .setTooltip('Reconnect')
+                    .onClick(() => this.#onConnect());
             })
             .addButton((btn) => {
                 btn
-                .setIcon("log-out")
-                .setTooltip("Disconnect")
-                .setWarning()
-                .onClick(() => this.#onDisconnect())
+                    .setIcon("log-out")
+                    .setTooltip("Disconnect")
+                    .setWarning()
+                    .onClick(() => this.#onDisconnect())
             })
 
-        if(this.#authExpired != "no") return;
+        if (this.#authExpired != "no") return;
 
         if (!this.#pgsettings.gdriveSettings.folderId) {
             headerWithIcon(this.containerEl, 'Characters folder not selected', 'folder-x');
@@ -117,7 +117,16 @@ class DriveSyncSettingTab extends PluginSettingTab {
             new IconButtonComponent(this.containerEl)
                 .setButtonText('Select Folder')
                 .addIcon('folder-closed')
-                .onClick(async() => await this.#onSelectCharactersFolder());
+                .onClick(
+                    async () =>
+                        await new FolderSelector(this.containerEl).display(
+
+                            async () => {
+                                const pwd = await this.#getUserPassword();
+                                return pwd ? this.#getGoogleAccessToken(pwd) : pwd;
+                            }
+                        )
+                );
 
         }
     }
@@ -247,8 +256,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         await this.#plugin.saveSettings(MASTER_PLUGIN);
     }
 
-    async #getGoogleAccessToken(password: string){
-   
+    async #getGoogleAccessToken(password: string) {
         if (this.#authExpired != "no") {
             await this.#refreshGoogleAccessToken(password);
         }
@@ -259,7 +267,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         );
     }
 
-    async #refreshGoogleAccessToken(password: string){
+    async #refreshGoogleAccessToken(password: string) {
         const refreshToken: string = await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
 
         if (!refreshToken) {
@@ -285,50 +293,10 @@ class DriveSyncSettingTab extends PluginSettingTab {
         );
     }
 
-    async #getUserPassword(){
-        const pwdModal = new UserPasswordModal(this.app);
-        const pwd = await pwdModal.waitInput();
-        if(pwd) this.#password = pwd;
+    async #getUserPassword() {
+        const pwd = await new UserPasswordModal(this.app).waitInput()
+        if (pwd) this.#password = pwd;
         return pwd;
-    }
-
-    async #onSelectCharactersFolder() {
-
-        const {promise, resolve} = Promise.withResolvers<boolean>();
-        const password = this.#password || await this.#getUserPassword()
-
-        if (!password) {
-            new Notice("Cancelled")
-            resolve(false)
-            return;
-        }
-
-        const accessToken = await this.#getGoogleAccessToken(password);
-
-        if(!accessToken) {
-            new Notice("Login error")
-            resolve(false);
-            return;
-        }
-
-        const folders = await listFoldersIn({
-            accessToken,
-            rootFolderId: "root"
-        })
-
-        const root = this.containerEl.createDiv({
-            cls: "folder-list nav-files-container",
-        })
-
-        for (const folder of folders) {
-            new DriveFolder(root)
-                .setLabel(folder.name)
-                .onClick(() => {
-                    console.log(folder.id)
-                })
-        }
-
-        return promise;
     }
 }
 

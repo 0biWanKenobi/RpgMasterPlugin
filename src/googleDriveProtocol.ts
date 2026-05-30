@@ -99,6 +99,17 @@ export async function getGoogleDriveAccessToken(
     } as const
 }
 
+
+export function areTokensStored(app: App) {
+    const secretIds = app.secretStorage.listSecrets();
+    const found = [false, false];
+    for (const secretId of secretIds) {
+        if(secretId == GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) found[0] = true;
+        if(secretId == GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) found[1] = true;
+    }
+    return found[0] && found[1];
+}
+
 export async function listFilesInFolderByMimeType({
     accessToken,
     folderId

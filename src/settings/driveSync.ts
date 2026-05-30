@@ -1,6 +1,7 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import RPGDungeonMasterPlugin from "../rpgMasterMain";
 import {
+    areTokensStored,
     clearGoogleDriveSetupContext,
     createGoogleDriveSetupContext,
     decryptGoogleDrivePayload,
@@ -17,7 +18,7 @@ import {
 } from "rpg_shared/sync/googleDriveAuth";
 import { IconButtonComponent } from "rpg_shared/ui/iconButton";
 import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
-import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
+import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal/index";
 import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal";
 import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
 import { DriveFolder } from "rpg_shared/ui/driveFolder/index";
@@ -45,9 +46,9 @@ class DriveSyncSettingTab extends PluginSettingTab {
             void this.#onTokenSetReceived(params as RpgNexusConfiguration);
         })
 
-        if (this.#authExpired != "no") {
+        if (this.#authExpired != "no" && areTokensStored(app)) {
             (async () => {
-                this.#password = await this.#getUserPassword();
+                this.#password ??= await this.#getUserPassword();
                 if(!this.#password) {
                     new Notice("Cancelled")
                     return;
@@ -186,8 +187,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         }
 
         this.#tokenStatus.value = "pwdinput";
-        const pwdModal = new UserPasswordModal(this.app);
-        const password = await pwdModal.waitInput();
+        const password = await this.#getUserPassword();
 
         if (!password) { //TODO: check length and complexity
             new Notice("No password set");
@@ -288,11 +288,13 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
     async #getUserPassword(){
         const pwdModal = new UserPasswordModal(this.app);
-        return await pwdModal.waitInput();
+        const pwd = await pwdModal.waitInput();
+        if(pwd) this.#password = pwd;
+        return pwd;
     }
 
     async #onSelectCharactersFolder() {
-        const password = await this.#getUserPassword()
+        const password = this.#password || await this.#getUserPassword()
 
         if (!password) {
             new Notice("Cancelled")

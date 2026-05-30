@@ -18,10 +18,10 @@ import {
 } from "rpg_shared/sync/googleDriveAuth";
 import { IconButtonComponent } from "rpg_shared/ui/iconButton";
 import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
-import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal/index";
+import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
 import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal";
 import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
-import { DriveFolder } from "rpg_shared/ui/driveFolder/index";
+import { DriveFolder } from "rpg_shared/ui/driveFolder";
 
 type TokenStatus = "idle" | "set" | "pwdinput" | "error";
 

@@ -21,7 +21,8 @@
 			"ES5",
 			"ES6",
 			"ES7",
-			"ES2024.Promise"
+			"ES2024.Promise",
+			"ES2023.Array"
 		]
 	},
 	"include": [

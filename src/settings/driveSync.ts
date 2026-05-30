@@ -83,7 +83,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
             headerWithIcon(this.containerEl, 'Google Drive not configured', 'cloud-off');
 
             new IconButtonComponent(this.containerEl)
-                .setButtonText('Connect Google Drive')
+                .setButtonText('Connect')
                 .addIcon('cloud')
                 .onClick(() => this.#onConnect());
 

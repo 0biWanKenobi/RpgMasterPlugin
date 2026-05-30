@@ -1,5 +1,5 @@
 import { App, Notice, PluginSettingTab, Setting } from "obsidian";
-import RPGDungeonMasterPlugin from "../rpgMasterMain";
+import RPGDungeonMasterPlugin from "../../rpgMasterMain";
 import {
     areTokensStored,
     clearGoogleDriveSetupContext,
@@ -9,9 +9,9 @@ import {
     GOOGLE_DRIVE_REFRESH_TOKEN_SECRET,
     listFoldersIn,
     persistGoogleDriveTokens
-} from "../googleDriveProtocol";
+} from "../../googleDriveProtocol";
 import { signal } from "@preact/signals";
-import { MASTER_PLUGIN } from "../capability";
+import { MASTER_PLUGIN } from "../../capability";
 import {
     GoogleDriveTokenSet,
     refreshGoogleDriveAccessToken
@@ -117,7 +117,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
             new IconButtonComponent(this.containerEl)
                 .setButtonText('Select Folder')
                 .addIcon('folder-closed')
-                .onClick(() => this.#onSelectCharactersFolder());
+                .onClick(async() => await this.#onSelectCharactersFolder());
 
         }
     }
@@ -293,10 +293,13 @@ class DriveSyncSettingTab extends PluginSettingTab {
     }
 
     async #onSelectCharactersFolder() {
+
+        const {promise, resolve} = Promise.withResolvers<boolean>();
         const password = this.#password || await this.#getUserPassword()
 
         if (!password) {
             new Notice("Cancelled")
+            resolve(false)
             return;
         }
 
@@ -304,6 +307,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
         if(!accessToken) {
             new Notice("Login error")
+            resolve(false);
             return;
         }
 
@@ -323,6 +327,8 @@ class DriveSyncSettingTab extends PluginSettingTab {
                     console.log(folder.id)
                 })
         }
+
+        return promise;
     }
 }
 

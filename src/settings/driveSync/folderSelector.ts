@@ -3,18 +3,33 @@ import { listFoldersIn } from "../../googleDriveProtocol";
 import { DriveFolder } from "rpg_shared/ui/driveFolder";
 import { signal } from "@preact/signals";
 
+import './folderSelector.css'
+
 class FolderSelector {
 
     #container: HTMLElement;
     #root: HTMLElement;
+    #actions: HTMLElement;
+
     #currentFolderId = signal('root');
     #parentFolderId = signal<string[]>([]);
+    #showButtons = signal(false);
     #token!: string
     #onSelected: ((folderId: string) => void) | undefined = undefined;
 
     constructor(container: HTMLElement) {
         this.#container = container;
         this.#root = this.#container.createDiv('folder-selector');
+
+        this.#actions = createDiv({
+            cls: 'folder-actions'
+        })
+
+        this.#showButtons.subscribe((v) => {
+            if(!v) this.#actions.addClass('hidden');
+            else this.#actions.removeClass('hidden')
+        })
+
         Object.seal(this);
     }
 
@@ -40,13 +55,15 @@ class FolderSelector {
         }
     }
 
-    async onSelected(callback: (folderId: string) => void) {
+    onSelected(callback: (folderId: string) => void) {
         this.#onSelected = callback;
+        return this;
     }
 
 
     async display(getAccessToken: () => Promise<string | undefined>) {
         const { promise, resolve } = Promise.withResolvers<boolean>();
+        this.#showButtons.value = true;
 
         const accessToken = await getAccessToken();
 
@@ -61,14 +78,14 @@ class FolderSelector {
             cls: "folder-list nav-files-container",
         })
 
-        const actions = this.#root.createDiv({
-            cls: 'folder-actions'
-        })
+        this.#root.appendChild(this.#actions);
 
-        new ButtonComponent(actions)
+        new ButtonComponent(this.#actions)
             .setButtonText('Cancel')
             .onClick(() => {
                 folderList.empty();
+                this.#showButtons.value = false;
+                resolve(false)
             })
 
         let upButton: ButtonComponent | undefined = undefined;
@@ -78,7 +95,7 @@ class FolderSelector {
                 return;
             }
 
-            upButton ??= new ButtonComponent(actions)
+            upButton ??= new ButtonComponent(this.#actions)
                 .setButtonText('Up')
                 .onClick(async () => {
                     folderList.empty();
@@ -93,11 +110,13 @@ class FolderSelector {
             upButton.buttonEl.show()
         })
 
-        new ButtonComponent(actions)
+        new ButtonComponent(this.#actions)
             .setButtonText('Select Folder')
             .setCta()
             .onClick(() => {
-                this.#onSelected?.call(this, this.#currentFolderId.value)
+                this.#onSelected?.call(this, this.#currentFolderId.value);
+                this.#showButtons.value = false;
+                resolve(true)
             })
 
 

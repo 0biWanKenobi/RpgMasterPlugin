@@ -4,9 +4,8 @@ import {
     areTokensStored,
     GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
     GOOGLE_DRIVE_REFRESH_TOKEN_SECRET,
-    persistGoogleDriveTokens
 } from "../../googleDriveProtocol";
-import { signal } from "@preact/signals";
+import { computed, signal } from "@preact/signals";
 import { MASTER_PLUGIN } from "../../capability";
 import {
     GoogleDriveTokenSet,
@@ -79,21 +78,50 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
         if (this.#authExpired != "no" && !areTokensStored(this.app)) return;
 
-        if (!this.#pgsettings.gdriveSettings.folderId) {
-            new HeaderWithIcon(this.containerEl).setDesc('Characters folder not selected').setIcon('folder-x');
+        const folderStatus = signal<'unset'|'set'|'selecting'>(this.#pgsettings.gdriveSettings.folderId ? 'set' : 'unset')
 
-            new IconButtonComponent(this.containerEl)
+        const folderStatusComponent = new HeaderWithIcon(this.containerEl).setIcon('folder-x');
+        
+        folderStatus.subscribe((v) => {
+            switch (v) {
+                case 'set':
+                    folderStatusComponent.setDesc('Character folder selected')
+                    break;
+                case 'unset':
+                     folderStatusComponent.setDesc('Characters folder not selected');
+                    break;
+                default:
+                    folderStatusComponent.setDesc('Select a folder');
+                    break;
+            }
+        })
+        if (!this.#pgsettings.gdriveSettings.folderId) {
+
+            const showFoldersBtn = new IconButtonComponent(this.containerEl)
                 .setButtonText('Select Folder')
                 .addIcon('folder-closed')
                 .onClick(
-                    async () =>
-                        await new FolderSelector(this.containerEl).display(
-
+                    async () =>{
+                        folderStatus.value = 'selecting';
+                        showFoldersBtn.buttonEl.hide();
+                        const selected = await new FolderSelector(this.containerEl)
+                        .onSelected((id) => {
+                            this.#pgsettings.gdriveSettings.folderId = id;
+                        })
+                        .display(
                             async () => {
                                 const pwd = await this.#getUserPassword();
                                 return pwd ? this.#getGoogleAccessToken(pwd) : pwd;
                             }
-                        )
+                        );
+                        if(selected){
+                            folderStatus.value = 'set';
+                        }
+                        else {
+                            folderStatus.value = 'unset';
+                            showFoldersBtn.buttonEl.show()
+                        }
+                    }
                 );
         }
     }

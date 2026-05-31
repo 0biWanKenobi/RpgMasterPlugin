@@ -13,7 +13,7 @@ import {
     refreshGoogleDriveAccessToken
 } from "rpg_shared/sync/googleDriveAuth";
 import { IconButtonComponent } from "rpg_shared/ui/iconButton";
-import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
+import { HeaderWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
 import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
 import { FolderSelector } from "./folderSelector";
@@ -80,7 +80,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         if (this.#authExpired != "no" && !areTokensStored(this.app)) return;
 
         if (!this.#pgsettings.gdriveSettings.folderId) {
-            headerWithIcon(this.containerEl, 'Characters folder not selected', 'folder-x');
+            new HeaderWithIcon(this.containerEl).setDesc('Characters folder not selected').setIcon('folder-x');
 
             new IconButtonComponent(this.containerEl)
                 .setButtonText('Select Folder')

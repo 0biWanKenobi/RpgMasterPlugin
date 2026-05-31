@@ -1,4 +1,4 @@
-import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
+import { HeaderWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { PluginSettings } from "../../settings";
 import { Notice, Setting } from "obsidian";
 import {
@@ -61,7 +61,7 @@ class ConnectionManager {
 
     display() {
         if (!this.#pgsettings.gdriveSettings.configured) {
-            headerWithIcon(this.#container, 'Google Drive not configured', 'cloud-off');
+            new HeaderWithIcon(this.#container).setDesc('Google Drive not configured').setIcon('cloud-off');
 
             new IconButtonComponent(this.#container)
                 .setButtonText('Connect')
@@ -71,7 +71,7 @@ class ConnectionManager {
             return;
         }
 
-        headerWithIcon(this.#container, 'Google Drive connected', 'cloud');
+        new HeaderWithIcon(this.#container).setDesc('Google Drive connected').setIcon('cloud');
 
         new Setting(this.#container)
             .setName('Connection status')

@@ -3,7 +3,7 @@ import type RPGDungeonMasterPlugin from "./rpgMasterMain";
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
 import { Tabs } from "rpg_shared/ui/tabs";
-import { headerWithIcon } from "rpg_shared/ui/headerWithIcon";
+import { HeaderWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { MASTER_PLUGIN } from "./capability";
 import { DriveSyncSettingTab } from "./settings/driveSync";
 
@@ -72,7 +72,7 @@ class SettingTab extends PluginSettingTab {
 
 	#displayOptions(containerEl: HTMLElement) {
 
-		headerWithIcon(containerEl, 'You', 'circle-user');
+		new HeaderWithIcon(containerEl).setDesc('You').setIcon('circle-user');
 
 		new Setting(containerEl)
 			.addText(text =>
@@ -88,7 +88,7 @@ class SettingTab extends PluginSettingTab {
 			)
 
 
-		headerWithIcon(containerEl, 'Campaigns', 'scroll-text');
+		new HeaderWithIcon(containerEl).setDesc('Campaigns').setIcon('scroll-text');
 
 		const campaignGallery = containerEl.createEl('div', { cls: 'plugin-settings-campaigns-gallery' })
 

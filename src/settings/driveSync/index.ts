@@ -52,7 +52,8 @@ class DriveSyncSettingTab extends PluginSettingTab {
                     new Notice("Cancelled")
                     return;
                 }
-                await this.#refreshGoogleAccessToken(this.#password);
+                const refreshed = await this.#refreshGoogleAccessToken(this.#password);
+                if(refreshed) this.display();
             })()
         }
 
@@ -267,12 +268,12 @@ class DriveSyncSettingTab extends PluginSettingTab {
         );
     }
 
-    async #refreshGoogleAccessToken(password: string) {
+    async #refreshGoogleAccessToken(password: string): Promise<boolean> {
         const refreshToken: string = await decryptObject(password, this.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
 
         if (!refreshToken) {
             new Notice("Invalid password!")
-            return;
+            return false;
         }
         const tokenSet = await refreshGoogleDriveAccessToken(
             import.meta.env.VITE_GAUTH_URL,
@@ -280,7 +281,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         )
         if (!tokenSet.success) {
             new Notice("Cannot authenticate");
-            return;
+            return false;
         }
 
         await this.#saveDriveTokens(
@@ -291,6 +292,8 @@ class DriveSyncSettingTab extends PluginSettingTab {
                 expiresAt: tokenSet.expiresAt
             },
         );
+
+        return true;
     }
 
     async #getUserPassword() {

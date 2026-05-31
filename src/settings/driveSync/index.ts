@@ -77,7 +77,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
         this.#connectionManager.display();
 
-        if (this.#authExpired != "no") return;
+        if (this.#authExpired != "no" && !areTokensStored(this.app)) return;
 
         if (!this.#pgsettings.gdriveSettings.folderId) {
             headerWithIcon(this.containerEl, 'Characters folder not selected', 'folder-x');

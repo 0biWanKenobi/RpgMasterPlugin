@@ -1,9 +1,20 @@
 import { ButtonComponent, Notice } from "obsidian";
-import { listFoldersIn } from "../../googleDriveProtocol";
+import { GoogleDriveFolderEntry, listFoldersIn } from "../../googleDriveProtocol";
 import { DriveFolder } from "rpg_shared/ui/driveFolder";
-import { signal } from "@preact/signals";
+import { Signal, signal } from "@preact/signals";
 
 import './folderSelector.css'
+
+type Pagination = {
+    currentPage: Signal<number>,
+    nextPageToken: Signal<string | undefined>,
+    pages: Page[]
+}
+
+type Page = {
+    pageToken?: string,
+    folders: GoogleDriveFolderEntry[]
+}
 
 class FolderSelector {
 
@@ -15,6 +26,13 @@ class FolderSelector {
     #parentFolderId = signal<string[]>([]);
     #showButtons = signal(false);
     #token!: string
+
+    #pagination: Pagination = {
+        currentPage: signal(0),
+        nextPageToken: signal(),
+        pages: []
+    }
+
     #onSelected: ((folderId: string) => void) | undefined = undefined;
 
     constructor(container: HTMLElement) {
@@ -34,12 +52,24 @@ class FolderSelector {
     }
 
 
-    async #listFolderContents(folderList: HTMLElement, folderId: string) {
-        const folders = await listFoldersIn({
+    async #listFolderContents(
+        folderList: HTMLElement,
+        folderId: string,
+        targetPageToken?: string
+    ) {
+        const result = await listFoldersIn({
             accessToken: this.#token,
-            rootFolderId: folderId
+            rootFolderId: folderId,
+            pageToken: targetPageToken
         })
-        for (const folder of folders) {
+
+        this.#renderFolderContents(result, folderList);
+
+        return result
+    }
+
+    #renderFolderContents(fc: Page, folderList: HTMLElement){
+        for (const folder of fc.folders) {
             new DriveFolder(folderList)
                 .setLabel(folder.name)
                 .onClick(() => {
@@ -53,6 +83,17 @@ class FolderSelector {
                     this.#listFolderContents(folderList, folder.id)
                 })
         }
+    }
+
+    #updatePagination(lr: Page, index: number){ 
+        this.#pagination.nextPageToken.value = lr.pageToken;
+        this.#pagination.currentPage.value = index;
+        this.#pagination.pages.push(lr);        
+    }
+    
+    #resetPagination(lr: Page) {
+        this.#pagination.pages = [];
+        this.#updatePagination(lr, 0);
     }
 
     onSelected(callback: (folderId: string) => void) {
@@ -74,8 +115,62 @@ class FolderSelector {
         }
         this.#token = accessToken;
         this.#root.empty();
-        const folderList = this.#root.createDiv({
+
+
+        const folderScroller = this.#root.createDiv({
+            cls: "scrollable-folders"
+        })
+
+        const folderList = folderScroller.createDiv({
             cls: "folder-list nav-files-container",
+        })
+
+        const scrollButtons = folderScroller.createDiv({
+            cls: "scroll-buttons"
+        })
+
+        const prevPageBtn = new ButtonComponent(scrollButtons)
+            .setIcon('arrow-up')
+            .onClick(async () => {
+                const pgn = this.#pagination;
+                const targetPageNr = pgn.currentPage.value - 1;
+                const page = pgn.pages.at(targetPageNr);
+                if(!page) {
+                    new Notice("Error loading folders")
+                    return;
+                }
+                folderList.empty();
+                this.#renderFolderContents(page, folderList);
+                this.#updatePagination(page, targetPageNr);
+            })
+        this.#pagination.currentPage.subscribe(v => {
+            prevPageBtn.setDisabled(v == 0)
+        })
+
+        const nextPageBtn = new ButtonComponent(scrollButtons)
+            .setIcon('arrow-down')
+            .onClick(async () => {
+                const pgn = this.#pagination;
+                const targetPageNr = pgn.currentPage.value + 1;
+                const page = pgn.pages.at(targetPageNr);
+                folderList.empty();
+
+                if(page) {
+                    this.#renderFolderContents(page, folderList);
+                    this.#updatePagination(page, targetPageNr)
+                    return;
+                }
+
+                const res = await this.#listFolderContents(
+                    folderList,
+                    this.#currentFolderId.value,
+                    pgn.nextPageToken.value
+                )
+                this.#updatePagination(res, targetPageNr)
+            })
+
+        this.#pagination.nextPageToken.subscribe(v => {
+            nextPageBtn.setDisabled(!v)
         })
 
         this.#root.appendChild(this.#actions);
@@ -83,31 +178,34 @@ class FolderSelector {
         new ButtonComponent(this.#actions)
             .setButtonText('Cancel')
             .onClick(() => {
-                folderList.empty();
+                folderScroller.empty();
                 this.#showButtons.value = false;
                 resolve(false)
             })
 
-        let upButton: ButtonComponent | undefined = undefined;
+        let parentFolderButton: ButtonComponent | undefined = undefined;
         this.#parentFolderId.subscribe((v) => {
             if (!v.length) {
-                upButton?.buttonEl.hide()
+                parentFolderButton?.buttonEl.hide()
                 return;
             }
 
-            upButton ??= new ButtonComponent(this.#actions)
+            parentFolderButton ??= new ButtonComponent(this.#actions)
                 .setButtonText('Up')
                 .onClick(async () => {
                     folderList.empty();
                     const parentId = v.at(-1)!;
-                    await this.#listFolderContents(folderList, parentId);
+                    
+                    const result = await this.#listFolderContents(folderList, parentId);
+                    this.#resetPagination(result);
+
                     this.#currentFolderId.value = parentId;
                     this.#parentFolderId.value = this.#parentFolderId.value.toSpliced(
                         this.#parentFolderId.value.length - 1,
                         1
                     )
                 })
-            upButton.buttonEl.show()
+            parentFolderButton.buttonEl.show()
         })
 
         new ButtonComponent(this.#actions)
@@ -121,7 +219,8 @@ class FolderSelector {
 
 
 
-        await this.#listFolderContents(folderList, 'root');
+        const result = await this.#listFolderContents(folderList, 'root');
+        this.#resetPagination(result);
 
         return promise;
     }

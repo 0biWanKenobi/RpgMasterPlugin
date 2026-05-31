@@ -149,71 +149,57 @@ export async function listFilesInFolderByMimeType({
 export async function listFoldersIn({
     accessToken,
     rootFolderId = "root",
-    skip = 0,
+    orderBy = 'name',
+    pageToken,
     take = 10
 }: {
     accessToken: string,
     rootFolderId: string,
-    skip?: number,
+    orderBy?: 'name' | 'modifiedTime'
+    pageToken?: string,
     take?: number
-}): Promise<GoogleDriveFolderEntry[]> {
+}): Promise<{
+    folders: GoogleDriveFolderEntry[],
+    pageToken?: string
+}> {
     const q = [
         `'${rootFolderId}' in parents`,
         `mimeType = 'application/vnd.google-apps.folder'`,
         `trashed = false`,
     ].join(" and ");
 
-    let remainingSkip = Math.max(0, skip);
-    let remainingTake = Math.max(0, take);
-    let pageToken: string | undefined;
-    const folders: GoogleDriveFolderEntry[] = [];
 
-    while (remainingTake > 0) {
-        const pageSize = Math.min(Math.max(remainingSkip + remainingTake, 1), 1000);
-        const params = new URLSearchParams({
-            q,
-            fields: "nextPageToken, files(id, name, mimeType)",
-            pageSize: String(pageSize),
-            supportsAllDrives: "true",
-            includeItemsFromAllDrives: "true",
-        });
+    const params = new URLSearchParams({
+        q,
+        fields: "nextPageToken, files(id, name, mimeType)",
+        pageSize: String(take),
+        supportsAllDrives: "true",
+        includeItemsFromAllDrives: "true",
+        orderBy
+    });
 
-        if (pageToken) {
-            params.set("pageToken", pageToken);
-        }
-
-        const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-        });
-
-        if (!res.ok) {
-            const errorText = await res.text();
-            throw new Error(`Drive API error ${res.status}: ${errorText}`);
-        }
-
-        const data = await res.json() as GoogleDriveListFoldersResponse;
-        const pageFiles = data.files ?? [];
-
-        if (remainingSkip >= pageFiles.length) {
-            remainingSkip -= pageFiles.length;
-        } else {
-            const startIndex = remainingSkip;
-            const pageResults = pageFiles.slice(startIndex, startIndex + remainingTake);
-            folders.push(...pageResults);
-            remainingTake -= pageResults.length;
-            remainingSkip = 0;
-        }
-
-        if (!data.nextPageToken || pageFiles.length === 0) {
-            break;
-        }
-
-        pageToken = data.nextPageToken;
+    if (pageToken) {
+        params.set("pageToken", pageToken);
     }
 
-    return folders;
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+        },
+    });
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Drive API error ${res.status}: ${errorText}`);
+    }
+
+    const data = await res.json() as GoogleDriveListFoldersResponse;
+    
+    return {
+        folders: data.files ?? [],
+        pageToken: data.nextPageToken
+        
+    } 
 
 }
 

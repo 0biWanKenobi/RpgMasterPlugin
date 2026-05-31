@@ -1,3 +1,15 @@
 .hidden {
     display: none
 }
+
+
+.scrollable-folders {
+  display: flex;  
+}
+
+.scroll-buttons {
+    padding: var(--size-4-2);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}

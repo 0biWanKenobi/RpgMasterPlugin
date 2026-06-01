@@ -194,8 +194,7 @@ class FolderSelector {
                 .setButtonText('Up')
                 .onClick(async () => {
                     folderList.empty();
-                    const parentId = v.at(-1)!;
-                    
+                    const parentId = this.#parentFolderId.value.at(-1)!;
                     const result = await this.#listFolderContents(folderList, parentId);
                     this.#resetPagination(result);
 

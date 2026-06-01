@@ -5,7 +5,7 @@ import {
     GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
     GOOGLE_DRIVE_REFRESH_TOKEN_SECRET,
 } from "../../googleDriveProtocol";
-import { computed, signal } from "@preact/signals";
+import { signal } from "@preact/signals";
 import { MASTER_PLUGIN } from "../../capability";
 import {
     GoogleDriveTokenSet,

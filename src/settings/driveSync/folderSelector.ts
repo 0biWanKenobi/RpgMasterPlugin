@@ -1,12 +1,12 @@
 import { ButtonComponent, Notice } from "obsidian";
 import { GoogleDriveFolderEntry, listFoldersIn } from "../../googleDriveProtocol";
 import { DriveFolder } from "rpg_shared/ui/driveFolder";
-import { Signal, signal } from "@preact/signals";
+import { computed, Signal, signal } from "@preact/signals";
 
 import './folderSelector.css'
 
 type Pagination = {
-    currentPage: Signal<number>,
+    currentPageIdx: Signal<number>,
     nextPageToken: Signal<string | undefined>,
     pages: Page[]
 }
@@ -15,6 +15,8 @@ type Page = {
     pageToken?: string,
     folders: GoogleDriveFolderEntry[]
 }
+
+type Folder = Omit<GoogleDriveFolderEntry, "mimeType">;
 
 class FolderSelector {
 
@@ -28,10 +30,39 @@ class FolderSelector {
     #token!: string
 
     #pagination: Pagination = {
-        currentPage: signal(0),
+        currentPageIdx: signal(0),
         nextPageToken: signal(),
         pages: []
     }
+
+
+    #path = signal<Folder[]>([{id: 'root', name: '/'}])
+
+    /**
+     * Current folder path up to parent folder
+     */
+    #pathStart = computed(
+        () => {
+            const maxIdx = this.#path.value.length - 1;
+            return this.#path.value.reduce(
+                (prev, curr, i) => {
+                    if (i == maxIdx)
+                        return prev;
+                    prev = prev + curr.name + "/"
+                    return prev.replace("//", "/");
+                }
+                , ""
+            )
+        }
+    )
+
+    /**
+     * Last fragment of current folder path
+     */
+    #pathEnd = computed(() => {
+        const maxIdx = this.#path.value.length - 1;
+        return this.#path.value.at(maxIdx)?.name ?? ""
+    })
 
     #onSelected: ((folderId: string) => void) | undefined = undefined;
 
@@ -44,7 +75,7 @@ class FolderSelector {
         })
 
         this.#showButtons.subscribe((v) => {
-            if(!v) this.#actions.addClass('hidden');
+            if (!v) this.#actions.addClass('hidden');
             else this.#actions.removeClass('hidden')
         })
 
@@ -68,7 +99,7 @@ class FolderSelector {
         return result
     }
 
-    #renderFolderContents(fc: Page, folderList: HTMLElement){
+    #renderFolderContents(fc: Page, folderList: HTMLElement) {
         for (const folder of fc.folders) {
             new DriveFolder(folderList)
                 .setLabel(folder.name)
@@ -76,21 +107,22 @@ class FolderSelector {
                     this.#parentFolderId.value = this.#parentFolderId.value.toSpliced(
                         this.#parentFolderId.value.length,
                         0,
-                        folder.id
+                        this.#currentFolderId.value
                     )
                     this.#currentFolderId.value = folder.id;
+                    this.#path.value = [...this.#path.peek(), {id: folder.id, name:folder.name}]
                     folderList.empty();
                     this.#listFolderContents(folderList, folder.id)
                 })
         }
     }
 
-    #updatePagination(lr: Page, index: number){ 
+    #updatePagination(lr: Page, index: number) {
         this.#pagination.nextPageToken.value = lr.pageToken;
-        this.#pagination.currentPage.value = index;
-        this.#pagination.pages.push(lr);        
+        this.#pagination.currentPageIdx.value = index;
+        this.#pagination.pages.push(lr);
     }
-    
+
     #resetPagination(lr: Page) {
         this.#pagination.pages = [];
         this.#updatePagination(lr, 0);
@@ -116,6 +148,16 @@ class FolderSelector {
         this.#token = accessToken;
         this.#root.empty();
 
+        const pathIndicator = this.#root.createDiv({cls: 'path-indicator'})
+        const pathStart = pathIndicator.createSpan({cls: "scrolling-start" })
+        this.#pathStart.subscribe( p => {
+            pathStart.setText(p)
+        })
+
+        const pathEnd = pathIndicator.createSpan({cls: "last-folder"})
+        this.#pathEnd.subscribe( p => {
+            pathEnd.setText(p)
+        })
 
         const folderScroller = this.#root.createDiv({
             cls: "scrollable-folders"
@@ -133,9 +175,9 @@ class FolderSelector {
             .setIcon('arrow-up')
             .onClick(async () => {
                 const pgn = this.#pagination;
-                const targetPageNr = pgn.currentPage.value - 1;
+                const targetPageNr = pgn.currentPageIdx.value - 1;
                 const page = pgn.pages.at(targetPageNr);
-                if(!page) {
+                if (!page) {
                     new Notice("Error loading folders")
                     return;
                 }
@@ -143,7 +185,7 @@ class FolderSelector {
                 this.#renderFolderContents(page, folderList);
                 this.#updatePagination(page, targetPageNr);
             })
-        this.#pagination.currentPage.subscribe(v => {
+        this.#pagination.currentPageIdx.subscribe(v => {
             prevPageBtn.setDisabled(v == 0)
         })
 
@@ -151,11 +193,11 @@ class FolderSelector {
             .setIcon('arrow-down')
             .onClick(async () => {
                 const pgn = this.#pagination;
-                const targetPageNr = pgn.currentPage.value + 1;
+                const targetPageNr = pgn.currentPageIdx.value + 1;
                 const page = pgn.pages.at(targetPageNr);
                 folderList.empty();
 
-                if(page) {
+                if (page) {
                     this.#renderFolderContents(page, folderList);
                     this.#updatePagination(page, targetPageNr)
                     return;
@@ -201,6 +243,10 @@ class FolderSelector {
                     this.#currentFolderId.value = parentId;
                     this.#parentFolderId.value = this.#parentFolderId.value.toSpliced(
                         this.#parentFolderId.value.length - 1,
+                        1
+                    )
+                    this.#path.value = this.#path.value.toSpliced(
+                        this.#path.value.length -1, 
                         1
                     )
                 })

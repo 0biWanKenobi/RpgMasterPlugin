@@ -13,3 +13,22 @@
     flex-direction: column;
     justify-content: space-between;
 }
+
+.path-indicator {
+    padding: var(--size-4-2);
+    border: 1px solid var(--color-base-40);
+    border-radius: 4px;
+    display: flex;
+    max-width: 100%; /* Or your constrained width */
+    white-space: nowrap;
+}
+
+.scrolling-start {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl; /* Forces truncation to happen at the "start" of this segment */
+  text-align: left;
+}
+.last-folder {
+  flex-shrink: 0; /* Ensures the filename is NEVER cut off */
+}

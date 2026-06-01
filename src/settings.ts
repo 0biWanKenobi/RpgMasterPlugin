@@ -64,7 +64,7 @@ class SettingTab extends PluginSettingTab {
 				this.#displayOptions(container);
 			})
 			.addTab('Google Drive', (container) => {
-				this.#driveSyncTab ??= new DriveSyncSettingTab(container, this.app, this.#plugin)
+				this.#driveSyncTab = new DriveSyncSettingTab(container, this.app, this.#plugin)
 				this.#driveSyncTab.display();
 			});
 	}

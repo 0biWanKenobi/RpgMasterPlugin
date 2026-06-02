@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterMain";
 import {
     areTokensStored,
@@ -19,12 +19,11 @@ import { FolderSelector } from "./folderSelector";
 import { ConnectionManager } from "./connectionManager";
 import { saveDriveTokens } from "./utilities";
 
-type TokenStatus = "idle" | "set" | "pwdinput" | "error";
 
 class DriveSyncSettingTab extends PluginSettingTab {
 
     #plugin: RPGDungeonMasterPlugin;
-    #tokenStatus = signal<TokenStatus>("idle");
+    #folderStatus = signal<'unset' | 'set' | 'selecting'>('unset');
 
     #connectionManager: ConnectionManager;
 
@@ -33,7 +32,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
         this.containerEl = container;
         this.#plugin = plugin;
 
-        this.#connectionManager = new ConnectionManager(this.containerEl, this.#tokenStatus, plugin);
+        this.#connectionManager = new ConnectionManager(this.containerEl, plugin);
 
         if (this.#authExpired != "no" && areTokensStored(app)) {
             (async () => {
@@ -43,7 +42,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
                     return;
                 }
                 const refreshed = await this.#refreshGoogleAccessToken(this.#password);
-                if(refreshed) this.display();
+                if (refreshed) this.display();
             })()
         }
 
@@ -78,54 +77,87 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
         if (this.#authExpired != "no" && !areTokensStored(this.app)) return;
 
-        const folderStatus = signal<'unset'|'set'|'selecting'>(this.#pgsettings.gdriveSettings.folderId ? 'set' : 'unset')
+        this.#folderStatus.value = this.#pgsettings.gdriveSettings.folderId ? 'set' : 'unset';
 
-        const folderStatusComponent = new HeaderWithIcon(this.containerEl).setIcon('folder-x');
-        
-        folderStatus.subscribe((v) => {
+        const folderStatusComponent = new HeaderWithIcon(this.containerEl)
+
+        let folderSetting: Setting | undefined;
+        let showFoldersBtn: IconButtonComponent;
+        this.#folderStatus.subscribe((v) => {
             switch (v) {
                 case 'set':
                     folderStatusComponent.setDesc('Character folder selected')
+                        .setIcon('folder-heart')
+                    folderSetting = new Setting(containerEl)
+                        .setName(this.#pgsettings.gdriveSettings.folderPath)
+                        .then(c => {
+                            c.nameEl.style.backgroundColor = 'var(--background-modifier-hover)'
+                            c.nameEl.style.paddingBlock = 'var(--size-4-1)'
+                            c.nameEl.style.paddingInline = 'var(--size-4-2)'
+                            c.nameEl.style.borderRadius = 'var(--setting-items-radius)'
+                        })
+                        .addButton(b =>
+                            b.setIcon('pencil')
+                                .onClick(async () => {
+                                    b.buttonEl.hide();
+                                    await this.#renderFolderSelection();
+                                    b.buttonEl.show()
+                                })
+                        )
+
                     break;
                 case 'unset':
-                     folderStatusComponent.setDesc('Characters folder not selected');
+                    folderStatusComponent.setDesc('Characters folder not selected')
+                        .setIcon('folder-x');
+                    showFoldersBtn?.buttonEl.show()
                     break;
-                default:
-                    folderStatusComponent.setDesc('Select a folder');
+                case 'selecting':
+                    folderStatusComponent.setDesc('Select a folder')
+                        .setIcon('folder-heart');
+                    folderSetting?.settingEl.hide()
                     break;
             }
         })
-        if (!this.#pgsettings.gdriveSettings.folderId) {
 
-            const showFoldersBtn = new IconButtonComponent(this.containerEl)
+        this.#connectionManager.onStatusChange( v => {
+
+            if(v == 'unset' && !areTokensStored(this.app)){
+                showFoldersBtn?.buttonEl.hide();
+                folderStatusComponent.settingEl.hide()
+                return;
+            }
+
+            folderStatusComponent.settingEl.show()
+            showFoldersBtn ??= new IconButtonComponent(this.containerEl)
                 .setButtonText('Select Folder')
                 .addIcon('folder-closed')
-                .onClick(
-                    async () =>{
-                        folderStatus.value = 'selecting';
-                        showFoldersBtn.buttonEl.hide();
-                        const selected = await new FolderSelector(this.containerEl)
-                        .onSelected((id) => {
-                            this.#pgsettings.gdriveSettings.folderId = id;
-                        })
-                        .display(
-                            async () => {
-                                const pwd = await this.#getUserPassword();
-                                return pwd ? this.#getGoogleAccessToken(pwd) : pwd;
-                            }
-                        );
-                        if(selected){
-                            folderStatus.value = 'set';
-                        }
-                        else {
-                            folderStatus.value = 'unset';
-                            showFoldersBtn.buttonEl.show()
-                        }
-                    }
-                );
-        }
+                .onClick(async () => {
+                    showFoldersBtn.buttonEl.hide();
+                    const selected = await this.#renderFolderSelection();
+                    showFoldersBtn.buttonEl.hidden = !selected;
+                });
+
+            showFoldersBtn.buttonEl.toggleVisibility(this.#folderStatus.value == 'unset')
+        })
     }
 
+    async #renderFolderSelection() {
+        this.#folderStatus.value = 'selecting';
+        const selected = await new FolderSelector(this.containerEl)
+            .onSelected(async (id, path) => {
+                this.#pgsettings.gdriveSettings.folderId = id;
+                this.#pgsettings.gdriveSettings.folderPath = path;
+                await this.#plugin.saveSettings(MASTER_PLUGIN)
+            })
+            .display(
+                async () => {
+                    const pwd = this.#password ?? await this.#getUserPassword();
+                    return pwd ? this.#getGoogleAccessToken(pwd) : pwd;
+                }
+            );
+        this.#folderStatus.value = (selected || this.#pgsettings.gdriveSettings.folderId) ? 'set' : 'unset';
+        return selected;
+    }
 
     async #saveDriveTokens(password: string, tokenSet: GoogleDriveTokenSet) {
         await saveDriveTokens(password, tokenSet, this.#plugin);
@@ -133,7 +165,8 @@ class DriveSyncSettingTab extends PluginSettingTab {
 
     async #getGoogleAccessToken(password: string) {
         if (this.#authExpired != "no") {
-            await this.#refreshGoogleAccessToken(password);
+            const success = await this.#refreshGoogleAccessToken(password);
+            if(!success) return;
         }
 
         const encryptedAccessToken = this.app.secretStorage.getSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) ?? "";
@@ -171,7 +204,7 @@ class DriveSyncSettingTab extends PluginSettingTab {
     }
 
     async #getUserPassword() {
-        const pwd = await new UserPasswordModal(this.app).waitInput()
+        const pwd = this.#password ?? await new UserPasswordModal(this.app).waitInput()
         if (pwd) this.#password = pwd;
         return pwd;
     }

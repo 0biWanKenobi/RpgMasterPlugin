@@ -21,6 +21,7 @@ export interface CampaignSettings {
 export interface GDriveSettings {
 	configured: boolean;
 	folderId: string;
+	folderPath: string;
 	expiresAt?: number;
 	lastUpdated: Date;
 }

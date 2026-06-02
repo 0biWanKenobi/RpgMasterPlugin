@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	gdriveSettings: {
 		configured: false,
 		folderId: '',
+		folderPath: '',
 		expiresAt: undefined,
 		lastUpdated: new Date(),
 	},

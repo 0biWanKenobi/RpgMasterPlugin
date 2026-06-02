@@ -12,12 +12,14 @@ import { MASTER_PLUGIN } from "../../capability";
 import RPGDungeonMasterPlugin from "../../rpgMasterMain";
 import { IconButtonComponent } from "rpg_shared/ui/iconButton";
 import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal";
-import { type Signal, signal } from "@preact/signals";
+import { batch, signal, type Signal } from "@preact/signals";
 import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
 import { GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
 import { saveDriveTokens } from "./utilities";
 
-type TokenStatus = "idle" | "set" | "pwdinput" | "error";
+
+export type TokenSetup = "idle" | "complete" | "pwdinput" | "error";
+export type TokenStatus = "set" | "unset";
 
 type RpgNexusConfiguration = {
     action: string,
@@ -27,18 +29,22 @@ type RpgNexusConfiguration = {
 
 class ConnectionManager {
 
-    #tokenStatus = signal<TokenStatus>("idle");
+    #tokenSetup: Signal<TokenSetup>;
+    #tokenStatus: Signal<TokenStatus>;
+    #tokenStatusUnsubscribe: undefined |(() => void);
     #pgsettings: PluginSettings;
     #container: HTMLElement;
+    #root: HTMLElement | undefined
     #plugin: RPGDungeonMasterPlugin
     password: string | undefined;
 
-    constructor(container: HTMLElement, signal: Signal<TokenStatus>, plugin: RPGDungeonMasterPlugin) {
+    constructor(container: HTMLElement, plugin: RPGDungeonMasterPlugin) {
         this.#plugin = plugin;
-        this.#pgsettings = plugin.getSettings(MASTER_PLUGIN);
-        this.#container = container;
+        this.#pgsettings = plugin.getSettings(MASTER_PLUGIN);        
+        this.#container = container
 
-        this.#tokenStatus = signal;
+        this.#tokenSetup = signal("idle");
+        this.#tokenStatus = signal(this.#pgsettings.gdriveSettings.configured? 'set' : 'unset')
 
         this.#plugin.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
             void this.#onTokenSetReceived(params as RpgNexusConfiguration);
@@ -47,6 +53,11 @@ class ConnectionManager {
         Object.seal(this);
     }
 
+    
+    get app() {
+        return this.#plugin.app;
+    }
+    
     get #authExpired() {
         const expiresAt = this.#pgsettings.gdriveSettings.expiresAt;
         if (!expiresAt) return "unknown"
@@ -55,25 +66,39 @@ class ConnectionManager {
         return remainingMs > 10000 ? "no" : "yes"
     }
 
-    get app() {
-        return this.#plugin.app;
-    }
 
     display() {
-        if (!this.#pgsettings.gdriveSettings.configured) {
-            new HeaderWithIcon(this.#container).setDesc('Google Drive not configured').setIcon('cloud-off');
 
-            new IconButtonComponent(this.#container)
-                .setButtonText('Connect')
-                .addIcon('cloud')
-                .onClick(() => this.#onConnect());
+        this.#tokenStatusUnsubscribe ??= this.#tokenStatus.subscribe(v => {
+            this.#root ??= this.#container.createDiv({cls: 'connection-manager'});
+            this.#root.empty();
 
-            return;
-        }
+            if(v == 'set')
+                this.#displayConnected(this.#root);
+            else if(v == 'unset')
+                this.#displayDisconnected(this.#root)            
+        })
+    }
 
-        new HeaderWithIcon(this.#container).setDesc('Google Drive connected').setIcon('cloud');
+    onStatusChange(callback: (v: TokenStatus) => void){
+        return this.#tokenStatus.subscribe(callback)
+    }
 
-        new Setting(this.#container)
+    #displayDisconnected(root: HTMLElement) {
+        new HeaderWithIcon(root).setDesc('Google Drive not configured').setIcon('cloud-off');
+
+        new IconButtonComponent(root)
+            .setButtonText('Connect')
+            .addIcon('cloud')
+            .onClick(() => this.#onConnect());
+    }
+
+    #displayConnected(root: HTMLElement){
+        new HeaderWithIcon(root)
+            .setDesc('Google Drive connected')
+            .setIcon('cloud');
+
+        new Setting(root)
             .setName('Connection status')
             .setDesc(`Connected. Access token expiration: ${this.#describeAccessTokenExpiry()}.`)
             .addButton((btn) => {
@@ -90,6 +115,7 @@ class ConnectionManager {
                     .onClick(() => this.#onDisconnect())
             })
     }
+
 
     #describeAccessTokenExpiry() {
         if (this.#authExpired == "unknown") {
@@ -112,15 +138,19 @@ class ConnectionManager {
         this.#pgsettings.gdriveSettings = {
             configured: false,
             folderId: '',
+            folderPath: '',
             lastUpdated: new Date(),
             expiresAt: undefined
         }
         this.#plugin.saveSettings(MASTER_PLUGIN)
-        this.display();
+        this.#tokenStatus.value = 'unset';
     }
 
     async #onConnect() {
-        this.#tokenStatus.value = 'idle';
+        batch(() => {
+            this.#tokenSetup.value = 'idle';
+            this.#tokenStatus.value = 'unset';
+        })
 
         const setupContext = createGoogleDriveSetupContext(
             this.app,
@@ -130,19 +160,19 @@ class ConnectionManager {
         const gdriveAuthModal = new GoogleDriveConnectModal(this.app);
         const cancelled = gdriveAuthModal.openAsync(setupContext.authUrl);
 
-        const stopListening = this.#tokenStatus.subscribe((set) => {
+        const stopListening = this.#tokenSetup.subscribe((status) => {
 
-            if (set == "pwdinput") {
+            if (status == "pwdinput") {
                 gdriveAuthModal.modalEl.hide();
             }
 
-            else if (set == "set") {
+            else if (status == "complete") {
                 gdriveAuthModal.modalEl.show();
                 new Notice("Token saved")
                 gdriveAuthModal.setStatus("Operation completed, you can close this window", "check-check");
-                gdriveAuthModal.setButtonsAfterLogin();
+                gdriveAuthModal.setButtonsAfterLogin();                
             }
-            else if (set == "error") {
+            else if (status == "error") {
                 gdriveAuthModal.modalEl.show();
                 new Notice("Error: token not saved")
                 gdriveAuthModal.setStatus("Something went wrong, close this window and try again.", "circle-x")
@@ -157,7 +187,7 @@ class ConnectionManager {
         stopListening();
 
         await this.#plugin.saveSettings(MASTER_PLUGIN);
-        this.display();
+        this.#tokenStatus.value = this.#pgsettings.gdriveSettings.configured? 'set' : 'unset';
     }
 
     async #getUserPassword() {
@@ -173,17 +203,17 @@ class ConnectionManager {
     async #onTokenSetReceived(configuration: RpgNexusConfiguration) {
 
         if (!configuration.setup_id || !configuration.payload) {
-            this.#tokenStatus.value = "error";
+            this.#tokenSetup.value = "error";
             new Notice("Google token payload missing from callback.")
             return;
         }
 
-        this.#tokenStatus.value = "pwdinput";
+        this.#tokenSetup.value = "pwdinput";
         this.password = await this.#getUserPassword();
 
         if (!this.password) { //TODO: check length and complexity
             new Notice("No password set");
-            this.#tokenStatus.value = "error"
+            this.#tokenSetup.value = "error"
             return;
         }
 
@@ -201,11 +231,11 @@ class ConnectionManager {
 
             clearGoogleDriveSetupContext(this.app, configuration.setup_id);
             await this.#plugin.saveSettings(MASTER_PLUGIN);
-            this.#tokenStatus.value = "set";
+            this.#tokenSetup.value = "complete";
             new Notice("Google Drive connected")
         } 
         catch (error) {
-            this.#tokenStatus.value = "error";
+            this.#tokenSetup.value = "error";
             new Notice(
                 error instanceof Error
                     ? `Google token decryption failed: ${error.message}`

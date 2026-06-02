@@ -1,9 +1,10 @@
 import { ButtonComponent, Notice } from "obsidian";
 import { GoogleDriveFolderEntry, listFoldersIn } from "../../googleDriveProtocol";
 import { DriveFolder } from "rpg_shared/ui/driveFolder";
-import { computed, Signal, signal } from "@preact/signals";
+import { Signal, signal } from "@preact/signals";
 
 import './folderSelector.css'
+import { FolderPathIndicator } from "./folderPathIndicator";
 
 type Pagination = {
     currentPageIdx: Signal<number>,
@@ -16,13 +17,13 @@ type Page = {
     folders: GoogleDriveFolderEntry[]
 }
 
-type Folder = Omit<GoogleDriveFolderEntry, "mimeType">;
 
 class FolderSelector {
 
     #container: HTMLElement;
     #root: HTMLElement;
     #actions: HTMLElement;
+    #pathIndicator!: FolderPathIndicator
 
     #currentFolderId = signal('root');
     #parentFolderId = signal<string[]>([]);
@@ -35,36 +36,7 @@ class FolderSelector {
         pages: []
     }
 
-
-    #path = signal<Folder[]>([{id: 'root', name: '/'}])
-
-    /**
-     * Current folder path up to parent folder
-     */
-    #pathStart = computed(
-        () => {
-            const maxIdx = this.#path.value.length - 1;
-            return this.#path.value.reduce(
-                (prev, curr, i) => {
-                    if (i == maxIdx)
-                        return prev;
-                    prev = prev + curr.name + "/"
-                    return prev.replace("//", "/");
-                }
-                , ""
-            )
-        }
-    )
-
-    /**
-     * Last fragment of current folder path
-     */
-    #pathEnd = computed(() => {
-        const maxIdx = this.#path.value.length - 1;
-        return this.#path.value.at(maxIdx)?.name ?? ""
-    })
-
-    #onSelected: ((folderId: string) => void) | undefined = undefined;
+    #onSelected: ((folderId: string, folderPath: string) => void) | undefined = undefined;
 
     constructor(container: HTMLElement) {
         this.#container = container;
@@ -110,7 +82,7 @@ class FolderSelector {
                         this.#currentFolderId.value
                     )
                     this.#currentFolderId.value = folder.id;
-                    this.#path.value = [...this.#path.peek(), {id: folder.id, name:folder.name}]
+                    this.#pathIndicator.push(folder)
                     folderList.empty();
                     this.#listFolderContents(folderList, folder.id)
                 })
@@ -128,7 +100,7 @@ class FolderSelector {
         this.#updatePagination(lr, 0);
     }
 
-    onSelected(callback: (folderId: string) => void) {
+    onSelected(callback: (folderId: string, folderPath: string) => void) {
         this.#onSelected = callback;
         return this;
     }
@@ -148,17 +120,7 @@ class FolderSelector {
         this.#token = accessToken;
         this.#root.empty();
 
-        const pathIndicator = this.#root.createDiv({cls: 'path-indicator'})
-        const pathStart = pathIndicator.createSpan({cls: "scrolling-start" })
-        this.#pathStart.subscribe( p => {
-            pathStart.setText(p)
-        })
-
-        const pathEnd = pathIndicator.createSpan({cls: "last-folder"})
-        this.#pathEnd.subscribe( p => {
-            pathEnd.setText(p)
-        })
-
+        this.#pathIndicator = new FolderPathIndicator(this.#root)
         const folderScroller = this.#root.createDiv({
             cls: "scrollable-folders"
         })
@@ -221,6 +183,7 @@ class FolderSelector {
             .setButtonText('Cancel')
             .onClick(() => {
                 folderScroller.empty();
+                this.#pathIndicator.remove();
                 this.#showButtons.value = false;
                 resolve(false)
             })
@@ -245,10 +208,7 @@ class FolderSelector {
                         this.#parentFolderId.value.length - 1,
                         1
                     )
-                    this.#path.value = this.#path.value.toSpliced(
-                        this.#path.value.length -1, 
-                        1
-                    )
+                    this.#pathIndicator.pop()
                 })
             parentFolderButton.buttonEl.show()
         })
@@ -257,11 +217,12 @@ class FolderSelector {
             .setButtonText('Select Folder')
             .setCta()
             .onClick(() => {
-                this.#onSelected?.call(this, this.#currentFolderId.value);
+                this.#onSelected?.call(this, this.#currentFolderId.value, this.#pathIndicator.get());
+                folderScroller.empty();
+                this.#pathIndicator.remove();
                 this.#showButtons.value = false;
                 resolve(true)
             })
-
 
 
         const result = await this.#listFolderContents(folderList, 'root');

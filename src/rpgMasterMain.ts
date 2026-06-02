@@ -1,4 +1,4 @@
-import type { App, PluginManifest } from 'obsidian';
+import type { App, ObsidianProtocolHandler, PluginManifest } from 'obsidian';
 import { Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, type PluginSettings, SettingTab } from './settings';
 import './styles.css'
@@ -7,6 +7,7 @@ import { MASTER_PLUGIN } from './capability';
 
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;
+	#handlerRegistered = false;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
@@ -39,6 +40,12 @@ class RPGDungeonMasterPlugin extends Plugin {
 	async saveSettings(token: typeof MASTER_PLUGIN) {
 		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		await this.saveData(this.#settings);
+	}
+
+	registerObsidianProtocolHandler(action: string, handler: ObsidianProtocolHandler): void {
+		if(this.#handlerRegistered) return;
+		super.registerObsidianProtocolHandler(action, handler)
+		this.#handlerRegistered = true;
 	}
 }
 

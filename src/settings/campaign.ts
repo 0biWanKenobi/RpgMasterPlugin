@@ -36,7 +36,7 @@ export class AddCampaignModal extends Modal {
 
 Object.freeze(AddCampaignModal.prototype)
 
-export const initCampaignNameSetting = (
+const initCampaignNameSetting = (
 	setting: Setting,
 	value: string
 ) => {

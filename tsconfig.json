@@ -16,6 +16,7 @@
 		"strictBindCallApply": true,
 		"allowSyntheticDefaultImports": true,
 		"useUnknownInCatchVariables": true,
+    	"types": ["svelte", "vite/client"],
 		"lib": [
 			"DOM",
 			"ES5",
@@ -27,7 +28,8 @@
 	},
 	"include": [
 		"src/**/*.ts",
-    	"./**/*.d.ts",           // ← add this
+    	"./**/*.d.ts",
+		"./**/*.svelte",
     	"eslint.config.mts"  
 	]
 }

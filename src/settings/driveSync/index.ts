@@ -15,7 +15,7 @@ import { IconButtonComponent } from "rpg_shared/ui/iconButton";
 import { HeaderWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
 import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
-import { FolderSelector } from "./folderSelector";
+import { FolderSelector } from "./folderSelector.svelte";
 import { ConnectionManager } from "./connectionManager";
 import { saveDriveTokens } from "./utilities";
 

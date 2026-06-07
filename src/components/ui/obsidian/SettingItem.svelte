@@ -18,7 +18,7 @@
     }
 
     interface Props {
-        name: string;
+        name?: string;
         description?: string | null;
         type?:
             | "dropdown"
@@ -31,12 +31,11 @@
         depth?: number;
         class?: string;
         notices?: InformationField[];
-
-        control?: any;
+        children?: any,
         subcontrol?: any;
     }
 
-    let {name, description = null, type = null, depth = 0, notices = [], class: className = "", control, subcontrol}: Props = $props();
+    let {name = "", description = null, type = null, depth = 0, notices = [], class: className = "", children, subcontrol}: Props = $props();
     let depthClass = $derived.by(() => {
         let s = "";
         if (depth)
@@ -80,9 +79,7 @@
         </div>
     </div>
     <div class="setting-item-control">
-        {#if control}
-            {@render control()}
-        {/if}
+        {@render children?.()}
     </div>
 </div>
 {#if subcontrol}

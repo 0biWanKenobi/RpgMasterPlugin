@@ -24,22 +24,34 @@
         onContextMenu = () => {},
         class: className = "",
     }: Props = $props();
+
+
+    const state = $derived(() => states[value]!)
 </script>
 
 <div
   class={className + " svelcomlib-icon-text"}
-  aria-label={states[value].tooltip}
+  role="button"
+  tabindex="0"
+  aria-label={state().tooltip}
   onclick={() => {
     value = (value + 1) % states.length;
     onClick();
   }}
+  onkeydown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      value = (value + 1) % states.length;
+      onClick();
+    }
+  }}
   oncontextmenu={onContextMenu}
 >
-  {#if states[value].icon}
-    <Icon icon={states[value].icon} {size} />
+  {#if state().icon}
+    <Icon icon={state().icon} {size} />
   {/if}
 
-  {#if states[value].text}
-    {states[value].text}
+  {#if state().text}
+    {state().text}
   {/if}
 </div>

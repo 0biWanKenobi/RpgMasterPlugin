@@ -2,6 +2,7 @@
   import type { HTMLInputTypeAttribute } from "svelte/elements";
 
   interface Props {
+    id?: string,
     type: HTMLInputTypeAttribute;
     value: string;
     placeholder?: string;
@@ -12,6 +13,7 @@
   }
 
     let {
+        id,
         type = "text",
         value = "",
         placeholder = "",
@@ -21,15 +23,17 @@
         class: className = ""
     }: Props = $props();
 
+
 </script>
 
 <!--TODO: value keyword is still an issue-->
 <input
+  {id}
   {type}
-  {value}
   {placeholder}
   {readonly}
-  oninput={(e) => onChange(e.target.value)}
+  {value}
+  oninput={e => onChange(e.currentTarget.value)}
   class={className}
   class:svelcomlib-input-success={valid}
   class:svelcomlib-input-fail={valid === false}

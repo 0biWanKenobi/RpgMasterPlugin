@@ -8,7 +8,7 @@
         class?: string;
     }
 
-    let {icon = "", size = null, stroke_width = null, class: className = ""}: Props = $props();
+    let {icon = "", size = null, stroke_width = null, class: className = "", ...rest}: Props = $props();
 
     let icon_element: SVGElement | null = $state(null);
 
@@ -23,18 +23,20 @@
     });
 
     $effect(() => {
-        if (icon_element && size) {
-            if (typeof size === "number") {
-                icon_element.style.width = size + "px";
-                icon_element.style.height = size + "px";
-            } else if (Array.isArray(size)) {
-                icon_element.style.width = size[0] + "px";
-                icon_element.style.height = size[1] + "px";
-            } else {
-                icon_element.style.width = `var(--${size})`;
-                icon_element.style.height = `var(--${size})`;
-            }
+        if (!(icon_element && size))
+            return;
+        
+        if (typeof size === "number") {
+            icon_element.style.width = size + "px";
+            icon_element.style.height = size + "px";
+        } else if (Array.isArray(size)) {
+            icon_element.style.width = size[0] + "px";
+            icon_element.style.height = size[1] + "px";
+        } else {
+            icon_element.style.width = `var(--${size})`;
+            icon_element.style.height = `var(--${size})`;
         }
+    
     });
 
     $effect(() => {

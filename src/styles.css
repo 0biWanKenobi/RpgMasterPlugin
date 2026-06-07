@@ -27,20 +27,6 @@ body {
 	font-size: 20px !important;
 }
 
-.header-with-icon {
-	column-gap: 0.5em;
-	flex-direction: row-reverse;
-	justify-content: start;
-	.header-icon-wrapper {
-		height: calc(var(--line-height-tight) * 1em);
-		display: flex;
-		align-items: end;
-		svg {
-			display: block;
-		}
-	}
-}
-
 .plugin-setting-group {
 	border: 1px solid var(--border-color);
 	border-radius: var(--group-border-radius);

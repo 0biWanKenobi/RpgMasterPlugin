@@ -4,7 +4,8 @@ import { DriveFolder } from "rpg_shared/ui/driveFolder";
 import { Signal, signal } from "@preact/signals";
 
 import './folderSelector.css'
-import { FolderPathIndicator } from "./folderPathIndicator";
+import FolderPathIndicator, { type Folder } from "./folderPathIndicator/index.svelte";
+import { mount } from "svelte";
 
 type Pagination = {
     currentPageIdx: Signal<number>,
@@ -120,7 +121,14 @@ class FolderSelector {
         this.#token = accessToken;
         this.#root.empty();
 
-        this.#pathIndicator = new FolderPathIndicator(this.#root)
+        const pathProps = $state({
+            path: [{id: 'root', name: '/'}] as Folder[],
+            show: true
+        })
+        this.#pathIndicator = mount(FolderPathIndicator, {
+            target: this.#root,
+            props: pathProps
+        }) 
         const folderScroller = this.#root.createDiv({
             cls: "scrollable-folders"
         })
@@ -183,7 +191,8 @@ class FolderSelector {
             .setButtonText('Cancel')
             .onClick(() => {
                 folderScroller.empty();
-                this.#pathIndicator.remove();
+                
+                pathProps.show = false;
                 this.#showButtons.value = false;
                 resolve(false)
             })
@@ -219,7 +228,7 @@ class FolderSelector {
             .onClick(() => {
                 this.#onSelected?.call(this, this.#currentFolderId.value, this.#pathIndicator.get());
                 folderScroller.empty();
-                this.#pathIndicator.remove();
+                pathProps.show = false;
                 this.#showButtons.value = false;
                 resolve(true)
             })

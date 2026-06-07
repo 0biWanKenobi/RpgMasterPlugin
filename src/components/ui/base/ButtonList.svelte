@@ -32,6 +32,12 @@
       {#if !disabled}
         <span
           onclick={() => onClick(value, index)}
+          role="button"
+          tabindex={index}
+          onkeydown={(e) => {
+            if(e.key != "Enter" && e.key != " ") return;
+            onClick(value, index);
+          }}
           class="setting-hotkey-icon"
           style="display: flex"
           aria-label={tooltip}

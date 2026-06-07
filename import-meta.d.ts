@@ -13,6 +13,12 @@ declare module "obsidian" {
 	interface SecretStorage {
 		deleteSecret(id: string): boolean;
 	}
+
+	interface App {
+		dom: {
+			appContainerEl: HTMLElement
+		}
+	}
 }
 
 declare global {

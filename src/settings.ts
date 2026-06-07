@@ -1,4 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
+import { mount, unmount } from "svelte";
 import type RPGDungeonMasterPlugin from "./rpgMasterMain";
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
 import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
@@ -6,6 +7,7 @@ import { Tabs } from "rpg_shared/ui/tabs";
 import { HeaderWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { MASTER_PLUGIN } from "./capability";
 import { DriveSyncSettingTab } from "./settings/driveSync";
+import appComponent from "./components/main.svelte";
 
 
 
@@ -43,6 +45,7 @@ class SettingTab extends PluginSettingTab {
 	#plugin: RPGDungeonMasterPlugin;
 
 	#driveSyncTab: DriveSyncSettingTab | undefined;
+	#mountedSvelte: object[] = [];
 
 	constructor(app: App, plugin: RPGDungeonMasterPlugin) {
 		super(app, plugin);
@@ -56,6 +59,7 @@ class SettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
+		this.#cleanupSvelte();
 		const { containerEl } = this;
 		containerEl.empty();
 
@@ -73,23 +77,19 @@ class SettingTab extends PluginSettingTab {
 
 	#displayOptions(containerEl: HTMLElement) {
 
-		new HeaderWithIcon(containerEl).setDesc('You').setIcon('circle-user');
-
-		new Setting(containerEl)
-			.addText(text =>
-				text.setDisabled(true)
-					.setValue(this.#pgsettings.dungeonMaster.id)
-					.setPlaceholder('rpg_mstr_id_4c58112a-f325-4397-b5b7-db137ef42414')
-			)
-			.setDesc('Your unique id, share it with your players so they can add you.')
-			.addButton(btn =>
-				btn
-					.setIcon('files')
-					.setTooltip('Copy ID')
-			)
+		this.#mountedSvelte.push(
+			mount(appComponent, {
+				target: containerEl,
+				props: {
+					app: this.app,
+					plugin: this.#plugin,
+					pgSettings: this.#pgsettings,
+				},
+			}),
+		);
 
 
-		new HeaderWithIcon(containerEl).setDesc('Campaigns').setIcon('scroll-text');
+		// new HeaderWithIcon(containerEl).setDesc('Campaigns').setIcon('scroll-text');
 
 		const campaignGallery = containerEl.createEl('div', { cls: 'plugin-settings-campaigns-gallery' })
 
@@ -108,27 +108,34 @@ class SettingTab extends PluginSettingTab {
 			}
 		}
 
-		const addCampaignModal = new AddCampaignModal(this.app);
-		addCampaignModal.content.onAddClicked(async (cmpgnId, cmpgnName) => {
-			this.#pgsettings.campaigns.push({
-				id: cmpgnId,
-				name: cmpgnName,
-				masterId: '',
-				playerCount: 0,
-				startDate: new Date(),
-				lastUpdated: new Date(),
-			});
-			await this.#plugin.saveSettings(MASTER_PLUGIN);
-			this.display();
-			addCampaignModal.close();
-		});
+		// const addCampaignModal = new AddCampaignModal(this.app);
+		// addCampaignModal.content.onAddClicked(async (cmpgnId, cmpgnName) => {
+		// 	this.#pgsettings.campaigns.push({
+		// 		id: cmpgnId,
+		// 		name: cmpgnName,
+		// 		masterId: '',
+		// 		playerCount: 0,
+		// 		startDate: new Date(),
+		// 		lastUpdated: new Date(),
+		// 	});
+		// 	await this.#plugin.saveSettings(MASTER_PLUGIN);
+		// 	this.display();
+		// 	addCampaignModal.close();
+		// });
 
-		new Setting(containerEl)
-			.addButton(btn => {
-				btn.setButtonText('Add new campaign')
-					.onClick(() => addCampaignModal.open())
-			})
+		// new Setting(containerEl)
+		// 	.addButton(btn => {
+		// 		btn.setButtonText('Add new campaign')
+		// 			.onClick(() => addCampaignModal.open())
+		// 	})
 
+	}
+
+	#cleanupSvelte() {
+		for (const component of this.#mountedSvelte) {
+			unmount(component);
+		}
+		this.#mountedSvelte = [];
 	}
 
 

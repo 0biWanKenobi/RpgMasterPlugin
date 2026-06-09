@@ -18,13 +18,18 @@ type Page = {
     folders: GoogleDriveFolderEntry[]
 }
 
+type FolderPathIndicatorHandle = {
+    push(fragment: Folder): void,
+    pop(): void,
+    get(): string
+}
 
 class FolderSelector {
 
     #container: HTMLElement;
     #root: HTMLElement;
     #actions: HTMLElement;
-    #pathIndicator!: FolderPathIndicator
+    #pathIndicator!: FolderPathIndicatorHandle
 
     #currentFolderId = signal('root');
     #parentFolderId = signal<string[]>([]);
@@ -128,7 +133,7 @@ class FolderSelector {
         this.#pathIndicator = mount(FolderPathIndicator, {
             target: this.#root,
             props: pathProps
-        }) 
+        }) as FolderPathIndicatorHandle
         const folderScroller = this.#root.createDiv({
             cls: "scrollable-folders"
         })

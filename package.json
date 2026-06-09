@@ -6,7 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite build --watch --mode development",
-		"build": "tsc -noEmit -skipLibCheck && vite build",
+		"build": "svelte-check --tsconfig ./tsconfig.json && vite build",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"start_test_server": "vite test --host 127.0.0.1 --port 5173 --strictPort --open",
 		"lint": "eslint .",
@@ -26,6 +26,7 @@
 		"jiti": "2.6.1",
 		"rollup-plugin-sourcemaps": "^0.6.3",
 		"svelte": "^5.56.2",
+		"svelte-check": "^4.6.0",
 		"tslib": "2.4.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.58.2",

@@ -1,17 +1,12 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, PluginSettingTab } from "obsidian";
 import { mount, unmount } from "svelte";
 import type RPGDungeonMasterPlugin from "./rpgMasterMain";
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
-import { AddCampaignModal, initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
+import { initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
 import { Tabs } from "rpg_shared/ui/tabs";
-import { HeaderWithIcon } from "rpg_shared/ui/headerWithIcon";
 import { MASTER_PLUGIN } from "./capability";
 import { DriveSyncSettingTab } from "./settings/driveSync";
 import appComponent from "./components/main.svelte";
-
-
-
-
 
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
@@ -63,15 +58,19 @@ class SettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		new Tabs()
-			.addToContainer(containerEl)
-			.addTab('Options', (container) => {
-				this.#displayOptions(container);
-			})
-			.addTab('Google Drive', (container) => {
-				this.#driveSyncTab = new DriveSyncSettingTab(container, this.app, this.#plugin)
-				this.#driveSyncTab.display();
-			});
+
+		this.#mountedSvelte.push(
+			mount(appComponent, {
+				target: containerEl,
+				props: {
+					app: this.app,
+					plugin: this.#plugin,
+					pgSettings: this.#pgsettings,
+				},
+			}),
+		);
+
+
 	}
 
 

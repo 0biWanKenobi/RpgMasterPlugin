@@ -5,6 +5,7 @@
 	import { type PluginSettings } from "../settings";
 	import RPGDungeonMasterPlugin from "../rpgMasterMain";
 	import { MASTER_PLUGIN } from "../capability";
+	import { Tab, Tabs } from "rpg_shared/ui/custom";
 
     type Props = {
             app: App,
@@ -29,6 +30,18 @@
 
 </script>
 
-<Profile/>
 
-<Campaign {onCampaignCreated} />
+<Tabs tabHeaders={["Options", "GoogleDrive"]}>
+	{#snippet tabs()}
+		<Tab index={0}>
+			<Profile/>			
+			<Campaign {onCampaignCreated} />
+		</Tab>
+		<Tab index={1}>
+			Hello
+		</Tab>
+	{/snippet}
+
+</Tabs>
+
+

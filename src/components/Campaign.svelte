@@ -1,13 +1,10 @@
 <script lang="ts">
-	import HeaderWithIcon from "./ui/custom/HeaderWithIcon.svelte";
-    import Setting from "./ui/obsidian/SettingItem.svelte";
-    import Button from "./ui/base/Button.svelte";
-	import Modal from "./ui/obsidian/Modal.svelte";
-    import SettingItemGroup from "./ui/obsidian/SettingItemGroup.svelte";
-	import SettingItem from "./ui/obsidian/SettingItem.svelte";
 	import { sc_randUUID } from "rpg_shared/crypto";
 	import { Notice } from "obsidian";
-
+	import { HeaderWithIcon } from "rpg_shared/ui/custom";
+    import { SettingItem as Setting, Modal, SettingItemGroup, SettingItem } from "rpg_shared/ui/obsidian"
+	import { Button } from "rpg_shared/ui/base";
+    
     type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
 
     type Props = {
@@ -43,7 +40,7 @@
     <Button text="Add new Campaign" onClick={showNewCampaignModal}/>
 </Setting>
 
-<Modal 
+<Modal
     bind:open={modalOpen}
     title="Add Campaign"
 >

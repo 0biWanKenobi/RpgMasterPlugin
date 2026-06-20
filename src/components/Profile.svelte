@@ -1,9 +1,7 @@
 <script lang="ts">
-	import Input from "./ui/base/Input.svelte";
-    import Setting from "./ui/obsidian/SettingItem.svelte";
-    import Button from "./ui/base/Button.svelte"
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
-
+    import { SettingItem as Setting } from "rpg_shared/ui/obsidian"
+    import { Button, Input } from "rpg_shared/ui/base"
 
     interface Props {
         userId?: string

@@ -1,16 +1,26 @@
 <script lang="ts">
     import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
     import { type GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
-    import { GoogleDriveConnectModal } from "rpg_shared/sync/googleDriveConnectModal";
+    import { GoogleDriveConnectModal } from "rpg_shared/ui/custom";
     import { saveDriveTokens } from "./utilities";
 	import RPGDungeonMasterPlugin from "../../rpgMasterMain";
-	import { PluginSettings } from "../../settings";
+	import { type PluginSettings } from "../../settings";
 	import { onMount } from "svelte";
 	import { MASTER_PLUGIN } from "../../capability";
-	import { clearGoogleDriveSetupContext, createGoogleDriveSetupContext, decryptGoogleDrivePayload, GOOGLE_DRIVE_ACCESS_TOKEN_SECRET, GOOGLE_DRIVE_REFRESH_TOKEN_SECRET } from "../../googleDriveProtocol";
+	import {
+        clearGoogleDriveSetupContext,
+        createGoogleDriveSetupContext,
+        decryptGoogleDrivePayload,
+        GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
+        GOOGLE_DRIVE_REFRESH_TOKEN_SECRET, 
+		type GoogleDriveSetupContext
+    } from "../../googleDriveProtocol";
 	import { Notice } from "obsidian";
+	import { HeaderWithIcon } from "rpg_shared/ui/custom";
+	import { Button } from "rpg_shared/ui/base";
+	import { SettingItem } from "rpg_shared/ui/obsidian";
 
-    export type TokenSetup = "idle" | "complete" | "pwdinput" | "error";
+    export type TokenSetup = "idle" | "inprogress" | "complete" | "pwdinput" | "error";
     export type TokenStatus = "set" | "unset";
 
     type RpgNexusConfiguration = {
@@ -22,39 +32,65 @@
     type Props = {
         plugin: RPGDungeonMasterPlugin,
         pgsettings: PluginSettings,
-        password: string | undefined
+        password?: string
     }
 
 
-    let { plugin, pgsettings, password }: Props = $props();
+    let { plugin, pgsettings, password = $bindable() }: Props = $props();
 
     let tokenSetup = $state<TokenSetup>('idle')
     let tokenStatus = $state<TokenStatus>('unset')
 
     const app = $derived(() => plugin.app)
     
+    const driveSetupCtx: GoogleDriveSetupContext = $state({
+        setupId: "",
+        authUrl: ""
+    })
 
-    const modalUI = $derived(() => {
+    let modalOpen = $state(false)
+    let modalMsg = $state("")
+    let modalIcon = $state("")
+    const afterLoginButtons = $derived(tokenSetup == "complete")
+    let loginInProgress = $state(false)
+
+
+    const connectionState = $derived(
+        tokenStatus == 'unset' ?    
+        {
+            icon: 'cloud-off',
+            label: "Google Drive Not Configured",
+        }:
+        {
+            icon: 'cloud',
+            label: 'Google Drive Connected',
+        }
+    )
+
+    $effect(() => {
         switch(tokenSetup){
+            case "inprogress":
+                modalOpen = true;
+                modalMsg = "";
+                modalIcon = "";
+                return;
             case "idle":
-            case "pwdinput": return {
-                show: false,
-                msg: "",
-                icon: "",
-                afterLoginButtons: false,
-            } as const
-            case "complete":return {
-                show: true,
-                msg: "Operation completed, you can close this window.",
-                icon: "check-check",
-                afterLoginButtons: true
-            } as const;
-            case "error": return {
-                show: true,
-                msg: "Something went wrong, close this window and try again.",
-                icon: "circle-x",
-                afterLoginButtons: false
-            } as const;
+            case "pwdinput":
+                modalOpen = false;
+                modalMsg = "";
+                modalIcon = "";
+                return;
+            case "complete":
+                modalOpen = true;
+                modalMsg = "Operation completed, you can close this window.";
+                modalIcon = "check-check";
+                tokenStatus = "set";
+                return;
+            case "error":
+                modalOpen = true;
+                modalMsg = "Something went wrong, close this window and try again.";
+                modalIcon = "circle-x";
+                return;
         }
     });
 
@@ -74,6 +110,10 @@
         plugin.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
             void onTokenSetReceived(params as RpgNexusConfiguration);
         })
+
+        return () => {
+            modalOpen = false;
+        }
     })
 
     
@@ -101,18 +141,24 @@
             import.meta.env.VITE_GAUTH_URL,
         );
 
-        const gdriveAuthModal = new GoogleDriveConnectModal(app());
-        const cancelled = gdriveAuthModal.openAsync(setupContext.authUrl);
-
-
-        if (await cancelled) {
-            clearGoogleDriveSetupContext(app(), setupContext.setupId);
+        driveSetupCtx.setupId = setupContext.setupId;
+        driveSetupCtx.authUrl = setupContext.authUrl;
+        
+        tokenSetup = 'inprogress';
+    }
+    
+    async function onModalClose (connectionCancelled: boolean) {
+        if (connectionCancelled) {
+            clearGoogleDriveSetupContext(app(), driveSetupCtx.setupId);
             new Notice("Setup cancelled")
         }
-
+    
         await plugin.saveSettings(MASTER_PLUGIN);
         tokenStatus = pgsettings.gdriveSettings.configured? 'set' : 'unset';
+
     }
+
+
 
     async function getUserPassword() {
         const pwd = await new UserPasswordModal(app()).waitInput()
@@ -125,7 +171,7 @@
     }
 
     async function onTokenSetReceived(configuration: RpgNexusConfiguration) {
-
+        loginInProgress = false;
         if (!configuration.setup_id || !configuration.payload) {
             tokenSetup = "error";
             new Notice("Google token payload missing from callback.")
@@ -169,3 +215,32 @@
     }
 </script>
 
+<div class="connection-manager">
+    <div id="testbtn"></div>
+    <HeaderWithIcon icon={connectionState.icon} text={connectionState.label} />
+    {#if tokenStatus == 'unset'}
+        <Button icon="cloud" text="Connect" onClick={onConnect} />    
+    {:else if tokenStatus == 'set'}
+        <SettingItem name="Connection status" description="Connected">
+            <Button icon="refresh-ccw" text="Reconnect" onClick={onConnect}/>
+            <Button icon="log-out" tooltip="Disconnect" warning onClick={onDisconnect}/>
+        </SettingItem>
+    {/if}
+
+
+
+    <GoogleDriveConnectModal
+        bind:open={modalOpen}
+        bind:loginInProgress
+        {afterLoginButtons}
+        authUrl={driveSetupCtx.authUrl}
+        bind:statusMsg={modalMsg}
+        bind:statusIcon={modalIcon}
+        onClose={onModalClose}
+    />
+
+</div>
+
+<style>
+
+</style>

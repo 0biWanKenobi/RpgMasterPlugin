@@ -6,6 +6,7 @@
 	import RPGDungeonMasterPlugin from "../rpgMasterMain";
 	import { MASTER_PLUGIN } from "../capability";
 	import { Tab, Tabs } from "rpg_shared/ui/custom";
+	import DriveSettings from "./DriveSettings.svelte";
 
     type Props = {
             app: App,
@@ -13,7 +14,7 @@
             pgSettings: PluginSettings,
         }
 
-    let { plugin, pgSettings }: Props = $props();
+    let { app, plugin, pgSettings }: Props = $props();
 
 
     const onCampaignCreated = async (cmpgnId: string, cmpgnName: string) => {
@@ -38,7 +39,7 @@
 			<Campaign {onCampaignCreated} />
 		</Tab>
 		<Tab index={1}>
-			Hello
+			<DriveSettings {plugin} />
 		</Tab>
 	{/snippet}
 

@@ -5,9 +5,8 @@ import { type GoogleDriveFolderEntry } from "../../../googleDriveProtocol";
 export type Folder = Omit<GoogleDriveFolderEntry, "mimeType">;
 type Props = {
     path: Folder[],
-    show?: boolean
 }
-let { path = $bindable(), show = true }: Props = $props()
+let { path = $bindable() }: Props = $props()
 
 
 const pathStart = $derived(() => {
@@ -46,13 +45,13 @@ export function get(){
 
 </script>
 
-{#if show}
-    <div class="path-indicator">
-        <span class="scrolling-start">{pathStart()}</span>
-        <span class="last-folder">{pathEnd()}</span>
 
-    </div>
-{/if}
+<div class="path-indicator">
+    <span class="scrolling-start">{pathStart()}</span>
+    <span class="last-folder">{pathEnd()}</span>
+
+</div>
+
 
 <style>
 .path-indicator {

@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { App, Notice } from "obsidian";
+	import { Notice } from "obsidian";
 	import { areTokensStored, GOOGLE_DRIVE_ACCESS_TOKEN_SECRET, GOOGLE_DRIVE_REFRESH_TOKEN_SECRET } from "../googleDriveProtocol";
-	import RPGDungeonMasterPlugin from "../rpgMasterMain";
-	import { type PluginSettings } from "../settings";
 	import ConnectionManager from "../settings/driveSync/connectionManager.svelte";
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
@@ -13,12 +11,11 @@
 	import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
 	import { type GoogleDriveTokenSet, refreshGoogleDriveAccessToken } from "rpg_shared/sync/googleDriveAuth";
 	import { onMount } from "svelte";
+	import { getAppContext } from "../context.svelte";
 
-    interface Props {
-        plugin: RPGDungeonMasterPlugin,
-    }
+
     
-    let { plugin }: Props = $props();
+    let { plugin } = getAppContext()
     onMount(() =>  {
         folderStatus = pgSettings.gdriveSettings.folderId ? "set" : "unset";
     })

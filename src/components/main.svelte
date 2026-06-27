@@ -1,24 +1,18 @@
 <script lang="ts">
-	import { App } from "obsidian";
 	import Campaign from "./Campaign.svelte";
 	import Profile from "./Profile.svelte";
-	import { type PluginSettings } from "../settings";
-	import RPGDungeonMasterPlugin from "../rpgMasterMain";
 	import { MASTER_PLUGIN } from "../capability";
 	import { Tab, Tabs } from "rpg_shared/ui/custom";
 	import DriveSettings from "./DriveSettings.svelte";
+	import { getAppContext } from "../context.svelte";
 
-    type Props = {
-            app: App,
-            plugin: RPGDungeonMasterPlugin,
-            pgSettings: PluginSettings,
-        }
 
-    let { app, plugin, pgSettings }: Props = $props();
+
+	const {  plugin, settings } = getAppContext()
 
 
     const onCampaignCreated = async (cmpgnId: string, cmpgnName: string) => {
-			pgSettings.campaigns.push({
+			settings.campaigns.push({
 				id: cmpgnId,
 				name: cmpgnName,
 				masterId: '',
@@ -39,7 +33,7 @@
 			<Campaign {onCampaignCreated} />
 		</Tab>
 		<Tab index={1}>
-			<DriveSettings {plugin} />
+			<DriveSettings />
 		</Tab>
 	{/snippet}
 

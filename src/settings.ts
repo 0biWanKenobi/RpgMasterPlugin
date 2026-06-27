@@ -1,12 +1,12 @@
 import { App, PluginSettingTab } from "obsidian";
-import { mount, unmount } from "svelte";
+import { Component, ComponentProps, mount, unmount } from "svelte";
 import type RPGDungeonMasterPlugin from "./rpgMasterMain";
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
-import { initCampaignGalleryItem, RemoveCampaignModal } from "./settings/campaign";
 import { MASTER_PLUGIN } from "./capability";
-import { DriveSyncSettingTab } from "./settings/driveSync";
-import appComponent from "./components/main.svelte";
+import AppComponent from "./components/main.svelte";
+import { setAppContext } from "./context.svelte";
 
+type AppProps = ComponentProps<typeof AppComponent>;
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
 	campaigns: CampaignSettings[];
@@ -51,6 +51,17 @@ class SettingTab extends PluginSettingTab {
 		return this.#plugin.getSettings(MASTER_PLUGIN)
 	}
 
+	
+
+	#ContextCreator: Component<AppProps> = (internals, props) => {
+		setAppContext({
+			plugin: this.#plugin,
+			settings: this.#pgsettings,
+		});
+
+		return AppComponent(internals, props);
+	};
+
 	display(): void {
 		this.#cleanupSvelte();
 		const { containerEl } = this;
@@ -58,13 +69,8 @@ class SettingTab extends PluginSettingTab {
 
 
 		this.#mountedSvelte.push(
-			mount(appComponent, {
+			mount(this.#ContextCreator, {
 				target: containerEl,
-				props: {
-					app: this.app,
-					plugin: this.#plugin,
-					pgSettings: this.#pgsettings,
-				},
 			}),
 		);
 

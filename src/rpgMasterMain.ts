@@ -1,6 +1,6 @@
 import type { App, ObsidianProtocolHandler, PluginManifest } from 'obsidian';
 import { Plugin } from 'obsidian';
-import { DEFAULT_SETTINGS, type PluginSettings, SettingTab } from './settings';
+import { DEFAULT_SETTINGS, type PluginSettings, SettingTab } from './settings.svelte';
 import './styles.css'
 import "rpg_shared/styles.css";
 import { MASTER_PLUGIN } from './capability';

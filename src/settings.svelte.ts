@@ -51,12 +51,12 @@ class SettingTab extends PluginSettingTab {
 		return this.#plugin.getSettings(MASTER_PLUGIN)
 	}
 
-	
-
 	#ContextCreator: Component<AppProps> = (internals, props) => {
+		const settingsState = $state(this.#pgsettings)
+
 		setAppContext({
 			plugin: this.#plugin,
-			settings: this.#pgsettings,
+			settings: settingsState,
 		});
 
 		return AppComponent(internals, props);
@@ -67,14 +67,11 @@ class SettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-
 		this.#mountedSvelte.push(
 			mount(this.#ContextCreator, {
 				target: containerEl,
 			}),
 		);
-
-
 	}
 
 	#cleanupSvelte() {
@@ -83,8 +80,6 @@ class SettingTab extends PluginSettingTab {
 		}
 		this.#mountedSvelte = [];
 	}
-
-
 }
 
 Object.freeze(SettingTab.prototype);

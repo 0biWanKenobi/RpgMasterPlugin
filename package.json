@@ -12,18 +12,22 @@
 		"lint": "eslint .",
 		"yalc:add:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} add rpg_shared",
 		"yalc:update:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} update rpg_shared",
-		"yalc:remove:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} remove rpg_shared"
+		"yalc:remove:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} remove rpg_shared",
+		"knip": "knip"
 	},
 	"keywords": [],
 	"license": "0-BSD",
 	"devDependencies": {
 		"@eslint/js": "9.30.1",
 		"@jsrob/svelte-portal": "^0.2.1",
+		"@playwright/test": "^1.61.1",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
-		"@types/node": "^20.17.0",
+		"@types/node": "^20.19.43",
 		"eslint-plugin-obsidianmd": "0.1.9",
 		"globals": "14.0.0",
 		"jiti": "2.6.1",
+		"knip": "^6.21.0",
+		"playwright": "^1.61.1",
 		"rollup-plugin-sourcemaps": "^0.6.3",
 		"svelte": "^5.56.2",
 		"svelte-check": "^4.6.0",
@@ -33,9 +37,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
-		"@preact/signals": "^2.8.1",
 		"obsidian": "1.12.3",
-		"peerjs": "^1.5.5",
 		"rpg_shared": "file:.yalc/rpg_shared"
 	}
 }

@@ -249,3 +249,11 @@ this.registerInterval(window.setInterval(() => { /* ... */ }, 1000));
 - Developer policies: https://docs.obsidian.md/Developer+policies
 - Plugin guidelines: https://docs.obsidian.md/Plugins/Releasing/Plugin+guidelines
 - Style guide: https://help.obsidian.md/style-guide
+
+
+# Playwright
+
+- this repo has Playwright installed as an npm package
+- there is a base script to interface with Obsidian at `src/playwright/base_script.ts`
+- Playwright reaches live Obsidian through Chrome DevTools Protocol at `http://127.0.0.1:9222` using `chromium.connectOverCDP(...)`
+- if sandbox blocks CDP socket access, rerun Playwright command with escalation

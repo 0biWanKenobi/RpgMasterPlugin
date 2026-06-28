@@ -33,27 +33,6 @@ body {
 	padding: 10px 3px 3px;
 }
 
-.plugin-settings-campaigns-gallery {
-	display: flex;
-	flex-direction: row;
-	gap: 1em;
-	margin-bottom: 20px;
-	.plugin-settings-campaign-gallery-item {
-		width: 100px;
-		height: 100px;
-		border: 1px solid var(--border-color);
-		border-radius: 5px;
-		padding: 10px;
-		word-break: break-word;
-		position: relative;
-		.icon {
-			position: absolute;
-			top: 4px;
-			right: 4px;
-			cursor: pointer;
-		}
-	}
-}
 
 .delete-dm-modal-buttons {
 	display: flex;

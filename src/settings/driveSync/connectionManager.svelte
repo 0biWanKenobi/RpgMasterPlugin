@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { UserPasswordModal } from "rpg_shared/ui/userPasswordModal";
+    import { UserPasswordModal } from "rpg_shared/ui/custom";
     import { type GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
     import { GoogleDriveConnectModal } from "rpg_shared/ui/custom";
     import { saveDriveTokens } from "./utilities";
@@ -159,10 +159,16 @@
     }
 
 
+    let userPwdState = $state({
+        open: false,
+        ref: undefined as UserPasswordModal | undefined,
+    })
 
     async function getUserPassword() {
-        const pwd = await new UserPasswordModal(app()).waitInput()
+        userPwdState.open = true;
+        const pwd = await userPwdState.ref?.onReturn();
         if (pwd) password = pwd;
+        userPwdState.open = false;
         return pwd;
     }
 
@@ -237,6 +243,12 @@
         bind:statusMsg={modalMsg}
         bind:statusIcon={modalIcon}
         onClose={onModalClose}
+    />
+
+    <UserPasswordModal
+        bind:this={userPwdState.ref}
+        bind:open={userPwdState.open}
+        title="Protect your account with a password"
     />
 
 </div>

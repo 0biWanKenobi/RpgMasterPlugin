@@ -1,12 +1,15 @@
 <script lang="ts">
+	import { Button } from "rpg_shared/ui/base";
+
 
 import { type GoogleDriveFolderEntry } from "../../../googleDriveProtocol";
 
 export type Folder = Omit<GoogleDriveFolderEntry, "mimeType">;
 type Props = {
+    onNavigate: (folderId: string, folderPath: string) => void,
     path: Folder[],
 }
-let { path = $bindable() }: Props = $props()
+let { path = $bindable(), onNavigate }: Props = $props()
 
 
 const pathStart = $derived(() => {
@@ -43,17 +46,40 @@ export function get(){
 }
 
 
+function navigateToFolder(folderId: string, folderPath: string) {    
+    for (let i = path.length - 1; i >= 0; i--) {
+        if (path[i]?.id != folderId) {
+            path.pop();
+        } else {
+            break;
+        }
+    }
+
+    onNavigate(folderId, folderPath);
+}
+
 </script>
 
 
 <div class="path-indicator">
+    <Button size={14} class="home-button" icon="home" onClick={() => {
+        navigateToFolder('root', '/');
+    }} />
     <span class="scrolling-start">{pathStart()}</span>
     <span class="last-folder">{pathEnd()}</span>
-
 </div>
 
 
 <style>
+
+:global(.home-button) {
+    margin-right: var(--size-4-1);
+    --size: 22px;
+    width: var(--size);
+    height: var(--size);
+    padding: 5px;
+    flex-shrink: 0;
+}
 .path-indicator {
     padding: var(--size-4-2);
     border: 1px solid var(--color-base-40);

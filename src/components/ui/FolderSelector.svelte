@@ -5,6 +5,9 @@
 	import { Button } from "rpg_shared/ui/base";
 	import DriveFolder from "./DriveFolder.svelte";
 	import { onMount } from "svelte";
+	import { SettingItemGroup, SettingItem, Modal } from "rpg_shared/ui/obsidian";
+	import { createFolder, deleteFolder, renameFolder } from "rpg_shared/sync/googleDriveOperations";
+	import { ConfirmModal } from "rpg_shared/ui/custom";
 
     type Pagination = {
         currentPageIdx: number,
@@ -24,12 +27,90 @@
         onCancel: () => void
     }
 
-    let {getAccessToken, onSelected, onCancel}: Props = $props();
+    let {
+        getAccessToken, onSelected, onCancel
+    }: Props = $props();
 
     let load = $state<"inprogress"|"success"|"error">("inprogress")
     let token: string = '';
 
-   
+    let newFolderModalOpen = $state(false);
+    const renameFolderState = $state({
+        open: false,
+        id: ''
+    });
+
+    const deleteFolderState = $state({
+        open: false,
+        id: '',
+        name: '',
+        action: async () => {
+            const token = await getAccessToken();
+            if(!token) return;
+            const response = await deleteFolder(token, deleteFolderState.id);
+            if(!response.success) {
+                console.error(response.error);
+                new Notice(response.errorMessage)
+            }
+            else{
+                new Notice(`Folder ${deleteFolderState.name} deleted successfully`)
+                reloadContents()
+            }
+            deleteFolderState.open = false;
+        }
+    })
+
+
+    let modalOpen = $state({
+        get value() { return newFolderModalOpen || renameFolderState.open },
+        set value(v) { newFolderModalOpen = renameFolderState.open = v }
+    })
+
+    const modalState = $derived(
+        newFolderModalOpen 
+            ? {
+                title: "Create Folder",
+                inputName: "Folder Name",
+                inputDescription: "Name of the new folder",
+                buttonText: "Create",
+                buttonAction: async () => {
+                    const token = await getAccessToken();
+                    if(!token) return;
+                    const response = await createFolder(token, folderName, folderNavigation.currentFolderId);
+                    if(!response.success) {
+                        console.error(response.error);
+                        new Notice(response.errorMessage)
+                    }
+                    else{
+                        new Notice(`Folder ${folderName} created successfully`)
+                        reloadContents()
+                    }
+                    modalOpen.value = false;
+                }
+            }
+            : {
+                title: "Rename to",
+                inputName: "New Name",
+                inputDescription: "New Name for the folder",
+                buttonText: "Save",
+                buttonAction: async () => {
+                    const token = await getAccessToken();
+                    if(!token) return;
+                    const response = await renameFolder(token, renameFolderState.id, folderName);
+                    if(!response.success) {
+                        console.error(response.error);
+                        new Notice(response.errorMessage)
+                    }
+                    else{
+                        new Notice('Folder renamed successfully')
+                        reloadContents();
+                    }
+                    modalOpen.value = false;
+                }
+            }
+    )
+
+    let folderName = $state<string>("");
 
     onMount(async () => {
         const res = await getAccessToken();
@@ -90,9 +171,18 @@
         pagination.pages.push(lr);
     }
 
-    function resetPagination(lr: Page) {
+    function resetPagination(lr: Page, index = 0) {
         pagination.pages = [];
-        updatePagination(lr, 0);
+        updatePagination(lr, index);
+    }
+
+    async function reloadContents({
+        folderId = folderNavigation.currentFolderId,
+        pageToken = undefined as string | undefined,
+        index = 0
+    } = {}) {
+        const result = await listFolderContents(folderId, pageToken);
+        resetPagination(result, index);
     }
 
     const onScrollUp = () => {
@@ -131,6 +221,15 @@
         listFolderContents(folder.id)
     }
 
+    const onFolderNavigate = async (folderId: string, folderPath: string) => {
+        if(folderId == folderNavigation.currentFolderId) return;
+
+        await reloadContents({folderId});
+
+        folderNavigation.currentFolderId = folderId;
+        folderNavigation.parentFolderId = folderPath.split("/").filter(p => p != "");
+    }
+
 </script>
 
 {#if load == "inprogress"}
@@ -142,13 +241,27 @@
 
 
     <div class="folder-selector">
-        <FolderPathIndicator bind:this={pathIndicatorRef} path={folderIndicatorState.path}/>
+        <FolderPathIndicator bind:this={pathIndicatorRef} path={folderIndicatorState.path} onNavigate={onFolderNavigate}/>
 
         <div class="scrollable-folders">
             <div class="folder-list nav-files-container">
                 {#if pagination.page}
                     {#each pagination.page.folders as folder}
-                        <DriveFolder text={folder.name} onClick={() => onFolderSelected(folder)}/>
+                        <DriveFolder
+                            text={folder.name}
+                            onClick={() => onFolderSelected(folder)}
+                            canEdit={folder.capabilities.canEdit}
+                            onEditFolder={() => {
+                                renameFolderState.id = folder.id
+                                renameFolderState.open = true
+                            }}
+                            canDelete={folder.capabilities.canTrash}
+                            onDeleteFolder={() => {
+                                deleteFolderState.id = folder.id;
+                                deleteFolderState.name = folder.name;
+                                deleteFolderState.open = true;
+                            }}
+                        />
                     {/each}
                 {/if}
 
@@ -184,8 +297,15 @@
                     if(!selectedPath) return;
                     onSelected(
                         folderNavigation.currentFolderId,
-                        selectedPath
+                        selectedPath,
                     )
+                }}
+            /><Button
+                text="Create Folder"
+                cta
+                onClick={() => {
+                    if(!pathIndicatorRef?.get()) return; // current path must be defined
+                    newFolderModalOpen = true;
                 }}
             />
         </div>
@@ -194,6 +314,30 @@
     </div>
 
 {/if}
+
+<Modal
+    bind:open={modalOpen.value}
+    title={modalState.title}
+
+>
+    <SettingItemGroup>
+        <SettingItem name={modalState.inputName} description={modalState.inputDescription}>
+            <input id="folder_name" type="text" oninput={(v) => folderName = v.currentTarget.value} />
+        </SettingItem>
+        <SettingItem name="">
+            <Button text={modalState.buttonText} onClick={modalState.buttonAction} />
+        </SettingItem>
+    </SettingItemGroup>
+</Modal>
+
+<ConfirmModal
+    bind:open={deleteFolderState.open}
+    title="Confirm Deletion?"
+    onClose={(confirm) => {
+        if(!confirm) return;
+        deleteFolderState.action()
+    }}
+/>
 
 <style>
 

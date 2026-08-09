@@ -15,6 +15,10 @@ export type GoogleDriveSetupContext = {
 export type GoogleDriveFolderEntry = {
     id: string;
     name: string;
+    capabilities: {
+        canTrash: boolean;
+        canEdit: boolean;
+    };
     mimeType: "application/vnd.google-apps.folder";
 }
 
@@ -117,7 +121,7 @@ export async function listFoldersIn({
 
     const params = new URLSearchParams({
         q,
-        fields: "nextPageToken, files(id, name, mimeType)",
+        fields: "nextPageToken, files(id, name, mimeType, capabilities(canTrash, canEdit))",
         pageSize: String(take),
         supportsAllDrives: "true",
         includeItemsFromAllDrives: "true",

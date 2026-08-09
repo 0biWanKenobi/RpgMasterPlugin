@@ -3,16 +3,38 @@
 
     interface Props {
       text: string
+      canEdit: boolean
+      canDelete: boolean
+      onEditFolder?: () => void
+      onDeleteFolder?: () => void
       onClick?: () => void
     }
 
-    let {text, onClick}: Props = $props();
+    let {text, onClick, canEdit, canDelete, onEditFolder, onDeleteFolder}: Props = $props();
+
+    const handleEdit = (event: MouseEvent) => {
+        event.stopPropagation();
+        onEditFolder?.();
+    }
+
+    const handleDelete = (event: MouseEvent) => {
+      event.stopPropagation();
+      onDeleteFolder?.();
+    }
 
 </script>
 
 
-<Button class="folder-list-item nav-file-title" icon="folder" {onClick}>
+<Button size={14} class="folder-list-item nav-file-title" icon="folder" {onClick}>
     <span class="folder-list-name nav-dile-title-content">{text}</span>
+    <span class="actions">
+      {#if canEdit}
+          <Button class="folder-button" tooltip="Rename" icon="pencil" onClick={handleEdit}/>
+          {/if}
+      {#if canDelete}
+          <Button warning class="folder-button" tooltip="Delete" icon="folder-x" onClick={handleDelete}/>
+      {/if}
+    </span>
 </Button>   
 
 
@@ -43,26 +65,42 @@
       color 120ms ease,
       transform 80ms ease;
 
-  &:hover {
-    background: var(--background-modifier-hover);
-    color: var(--text-normal);
-  }
+    & .actions {
+      margin-left: auto;
+      display: flex;
+      column-gap: 5px;
+      opacity: 0;
+      transition: opacity 150ms ease;
+    }
+    & .folder-button {
+        --size: 22px;
+        width: var(--size);
+        height: var(--size);
+        padding: 5px;
+    }
+    &:hover {
+      background: var(--background-modifier-hover);
+      color: var(--text-normal);
+      & :global(.actions) {
+          opacity: 1;
+      }
+    }
 
-  &:focus-visible {
-    outline: 2px solid var(--background-modifier-border-focus);
-    outline-offset: 2px;
-  }
-  
-  &:active {
-    transform: translateY(1px);
-    background: var(--background-modifier-active-hover);
-  }
+    &:focus-visible {
+      outline: 2px solid var(--background-modifier-border-focus);
+      outline-offset: 2px;
+    }
     
-  &.is-selected {
-    background: var(--background-modifier-active-hover);
-    border-color: var(--background-modifier-border);
-    color: var(--text-accent);
-  }
+    &:active {
+      transform: translateY(1px);
+      background: var(--background-modifier-active-hover);
+    }
+      
+    &.is-selected {
+      background: var(--background-modifier-active-hover);
+      border-color: var(--background-modifier-border);
+      color: var(--text-accent);
+    }
 }    
 
 

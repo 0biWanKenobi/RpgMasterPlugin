@@ -2,12 +2,12 @@
 	import { Notice } from "obsidian";
 	import { areTokensStored, GOOGLE_DRIVE_ACCESS_TOKEN_SECRET, GOOGLE_DRIVE_REFRESH_TOKEN_SECRET } from "../googleDriveProtocol";
 	import ConnectionManager from "../settings/driveSync/connectionManager.svelte";
-	import { HeaderWithIcon } from "rpg_shared/ui/custom";
+	import { HeaderWithIcon, UserPasswordModal } from "rpg_shared/ui/custom";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
 	import { Button } from "rpg_shared/ui/base";
 	import FolderSelector from "./ui/FolderSelector.svelte";
 	import { MASTER_PLUGIN } from "../capability";
-	import { getUserPassword, saveDriveTokens } from "../settings/driveSync/utilities";
+	import { saveDriveTokens } from "../settings/driveSync/utilities";
 	import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
 	import { type GoogleDriveTokenSet, refreshGoogleDriveAccessToken } from "rpg_shared/sync/googleDriveAuth";
 	import { onMount } from "svelte";
@@ -94,6 +94,19 @@
         await saveDriveTokens(password, tokenSet, plugin);
     }
 
+    async function saveDriveFolderToSettings(folderId: string, folderPath: string) {
+        showEditButton = true;
+        folderStatus = 'set';
+        pgSettings.gdriveSettings.folderId = folderId;
+        pgSettings.gdriveSettings.folderPath = folderPath;
+        await plugin.saveSettings(MASTER_PLUGIN);
+    }
+
+    const pwdModalState = $state({
+        ref: undefined as UserPasswordModal | undefined,
+        open: false,
+        onConfirm: (_: string) => {}
+    })
 </script>
 
 
@@ -119,16 +132,14 @@
     {:else if folderStatus == 'selecting'}
         <FolderSelector 
             getAccessToken={async () => {
-                const pwd = password ?? await getUserPassword(plugin.app);
+                if(!!password) return password
+                pwdModalState.open = true;
+                const pwd = await pwdModalState.ref?.onReturn()
+                password = pwd;
+                pwdModalState.open = false;
                 return pwd ? getGoogleAccessToken(pwd) : pwd;
             }}
-            onSelected={async (folderId, folderPath) => {
-                showEditButton = true;
-                folderStatus = 'set';
-                pgSettings.gdriveSettings.folderId = folderId;
-                pgSettings.gdriveSettings.folderPath = folderPath;
-                await plugin.saveSettings(MASTER_PLUGIN);
-            }}
+            onSelected={saveDriveFolderToSettings}
             onCancel={() => {
                 showEditButton = true;
                 folderStatus = pgSettings.gdriveSettings.folderId ? 'set' : 'unset';
@@ -137,6 +148,11 @@
     {/if}
 {/if}
 
+<UserPasswordModal
+    bind:this={pwdModalState.ref}
+    title="Please provide your Password"
+    bind:open={pwdModalState.open}
+/>
 
 <style>
     :global(.folder-setting){

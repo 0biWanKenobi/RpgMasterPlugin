@@ -3,9 +3,10 @@
 	import { Notice } from "obsidian";
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
     import { SettingItem as Setting, Modal, SettingItemGroup } from "rpg_shared/ui/obsidian"
-	import { Button } from "rpg_shared/ui/base";
-	import { getAppContext } from "../context.svelte";
+	import { Button, Input } from "rpg_shared/ui/base";
+	import { getAppContext } from "../../context.svelte";
 	import CampaignItem from "./CampaignItem.svelte";
+	import { MASTER_PLUGIN } from "../../capability";
     
     type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
 
@@ -15,11 +16,11 @@
 
     let {onCampaignCreated}: Props = $props()
 
-    const{settings} = getAppContext();
+    const{ settings, plugin } = getAppContext();
 
     let modalOpen = $state(false);
     let campaignName = $state("");
-    const campaignList = $derived(settings.campaigns)
+    const campaignList = $derived(settings.campaign.list)
 
     const showNewCampaignModal = () => {
         modalOpen = true
@@ -41,13 +42,12 @@
 
     const onDeleteCampaign = async() => {
         campaignList.splice(deleteCampaignState.index, 1);
+        await plugin.saveSettings(MASTER_PLUGIN);
         deleteCampaignState.modal = false
     }
 </script>
 
-
 <HeaderWithIcon text='Campaigns' icon='scroll-text'></HeaderWithIcon>
-
 
 <div class="plugin-settings-campaigns-gallery">
     {#each campaignList as campaignItem, i (campaignItem.id) }
@@ -75,7 +75,7 @@
 >
     <SettingItemGroup>
         <Setting name="Campaign Name" description="Name of this awesome campaign">
-            <input id="campaign_name" type="text" oninput={(v) => campaignName = v.currentTarget.value} />
+            <Input type="text" onChange={(v) => campaignName = v} />
         </Setting>
         <Setting name="">
             <Button text="Create" onClick={onCreateCampaign} />

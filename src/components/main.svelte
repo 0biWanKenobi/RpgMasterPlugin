@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Campaign from "./Campaign.svelte";
+	import CampaignManager from "./campaign/CampaignManager.svelte";
 	import Profile from "./Profile.svelte";
 	import { MASTER_PLUGIN } from "../capability";
 	import { Tab, Tabs } from "rpg_shared/ui/custom";
@@ -12,7 +12,7 @@
 
 
     const onCampaignCreated = async (cmpgnId: string, cmpgnName: string) => {
-			settings.campaigns.push({
+			settings.campaign.list.push({
 				id: cmpgnId,
 				name: cmpgnName,
 				masterId: '',
@@ -30,7 +30,7 @@
 	{#snippet tabs()}
 		<Tab index={0}>
 			<Profile/>			
-			<Campaign {onCampaignCreated} />
+			<CampaignManager {onCampaignCreated} />
 		</Tab>
 		<Tab index={1}>
 			<DriveSettings />

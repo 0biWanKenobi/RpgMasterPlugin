@@ -1,9 +1,10 @@
 import type { App, ObsidianProtocolHandler, PluginManifest } from 'obsidian';
 import { Plugin } from 'obsidian';
-import { DEFAULT_SETTINGS, type PluginSettings, SettingTab } from './settings.svelte';
+import { SettingTab } from './settings';
 import './styles.css'
 import "rpg_shared/styles.css";
 import { MASTER_PLUGIN } from './capability';
+import { createSettingsState, DEFAULT_SETTINGS, snapshotSettings, type PluginSettings } from './settingState.svelte';
 
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;
@@ -15,7 +16,7 @@ class RPGDungeonMasterPlugin extends Plugin {
 	}
 
 	async onload() {
-		console.log('Loading RPG Master Plugin');
+		console.debug('Loading RPG Master Plugin');
 
 		await this.#loadSettings();
 
@@ -34,12 +35,13 @@ class RPGDungeonMasterPlugin extends Plugin {
 	}
 
 	async #loadSettings() {
-		this.#settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<PluginSettings>);
+		const loaded = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<PluginSettings>);
+		this.#settings = createSettingsState(loaded);
 	}
 
 	async saveSettings(token: typeof MASTER_PLUGIN) {
 		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
-		await this.saveData(this.#settings);
+		await this.saveData(snapshotSettings(this.#settings));
 	}
 
 	registerObsidianProtocolHandler(action: string, handler: ObsidianProtocolHandler): void {

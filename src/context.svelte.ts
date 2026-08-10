@@ -1,6 +1,6 @@
 import { createContext } from "svelte";
 import type RPGDungeonMasterPlugin from "./rpgMasterMain";
-import type { PluginSettings } from "./settings.svelte";
+import { PluginSettings } from "./settingState.svelte";
 
 const [getAppContext, setAppContext] = createContext<{
   plugin: RPGDungeonMasterPlugin,

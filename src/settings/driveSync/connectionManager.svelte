@@ -4,7 +4,7 @@
     import { GoogleDriveConnectModal } from "rpg_shared/ui/custom";
     import { saveDriveTokens } from "./utilities";
 	import RPGDungeonMasterPlugin from "../../rpgMasterMain";
-	import { type PluginSettings } from "../../settings.svelte";
+    import { type PluginSettings } from "../../settingState.svelte";
 	import { onMount } from "svelte";
 	import { MASTER_PLUGIN } from "../../capability";
 	import {

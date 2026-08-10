@@ -4,8 +4,9 @@
     "-lintignore"
   ],
   "entry": [
-    "src/settings.{js,ts,tsx}"
+    "src/rpgMasterMain.{js,ts,tsx}"
   ],
-  "ignoreBinaries": ["yalc", "eslint"],
-  "ignoreDependencies": ["@jsrob/svelte-portal", "*playwright*"]
+  "ignoreBinaries": ["eslint"],
+  "ignoreDependencies": ["@jsrob/svelte-portal", ".*playwright.*"],
+  "ignoreFiles": "**/playwright/**/*.ts"
 }

@@ -2,7 +2,7 @@
 	import { sc_randUUID } from "rpg_shared/crypto";
 	import { Notice } from "obsidian";
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
-    import { SettingItem as Setting, Modal, SettingItemGroup, SettingItem } from "rpg_shared/ui/obsidian"
+    import { SettingItem as Setting, Modal, SettingItemGroup } from "rpg_shared/ui/obsidian"
 	import { Button } from "rpg_shared/ui/base";
 	import { getAppContext } from "../context.svelte";
 	import CampaignItem from "./CampaignItem.svelte";
@@ -74,12 +74,12 @@
     title="Add Campaign"
 >
     <SettingItemGroup>
-        <SettingItem name="Campaign Name" description="Name of this awesome campaign">
+        <Setting name="Campaign Name" description="Name of this awesome campaign">
             <input id="campaign_name" type="text" oninput={(v) => campaignName = v.currentTarget.value} />
-        </SettingItem>
-        <SettingItem name="">
+        </Setting>
+        <Setting name="">
             <Button text="Create" onClick={onCreateCampaign} />
-        </SettingItem>
+        </Setting>
     </SettingItemGroup>
 </Modal>
 

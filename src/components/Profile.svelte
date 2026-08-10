@@ -21,8 +21,7 @@
 >
 </HeaderWithIcon>
 <Setting
-    name=""
-    description="Your unique id, share it with your players so they can add you."
+    name="Your unique id, share it with your players so they can add you."
 >
     <Input
         id="profile_id"

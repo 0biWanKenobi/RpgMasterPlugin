@@ -95,7 +95,6 @@
         }
     });
 
-
     $effect(() => {
         tokenStatus = pgsettings.gdriveSettings.configured ? 'set' : 'unset'
     })
@@ -109,8 +108,6 @@
             mounted = false;
         }
     })
-
-    
 
     async function onDisconnect() {
         app().secretStorage.deleteSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET);
@@ -151,7 +148,6 @@
         tokenStatus = pgsettings.gdriveSettings.configured? 'set' : 'unset';
 
     }
-
 
     let userPwdState = $state({
         open: false,
@@ -228,8 +224,6 @@
             <Button icon="log-out" tooltip="Disconnect" warning onClick={onDisconnect}/>
         </SettingItem>
     {/if}
-
-
 
     <GoogleDriveConnectModal
         bind:open={

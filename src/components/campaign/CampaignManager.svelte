@@ -6,6 +6,7 @@
 	import { Button, Input } from "rpg_shared/ui/base";
 	import { getAppContext } from "../../context.svelte";
 	import CampaignItem from "./CampaignItem.svelte";
+	import VaultFolderPicker from "./VaultFolderPicker.svelte";
 	import { MASTER_PLUGIN } from "../../capability";
     
     type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
@@ -48,6 +49,7 @@
 </script>
 
 <HeaderWithIcon text='Campaigns' icon='scroll-text'></HeaderWithIcon>
+<VaultFolderPicker/>
 
 <div class="plugin-settings-campaigns-gallery">
     {#each campaignList as campaignItem, i (campaignItem.id) }

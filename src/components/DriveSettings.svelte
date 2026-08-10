@@ -107,6 +107,9 @@
         open: false,
         onConfirm: (_: string) => {}
     })
+
+    let pwdAsync = Promise.withResolvers<string|undefined>()
+
 </script>
 
 
@@ -134,7 +137,8 @@
             getAccessToken={async () => {
                 if(!!password) return password
                 pwdModalState.open = true;
-                const pwd = await pwdModalState.ref?.onReturn()
+                pwdAsync = Promise.withResolvers<string|undefined>();
+                const pwd = await pwdAsync.promise;
                 password = pwd;
                 pwdModalState.open = false;
                 return pwd ? getGoogleAccessToken(pwd) : pwd;
@@ -152,6 +156,14 @@
     bind:this={pwdModalState.ref}
     title="Please provide your Password"
     bind:open={pwdModalState.open}
+    onCancel={() => {
+        pwdModalState.open = false;
+        pwdAsync.resolve(undefined);
+    }}
+    onReturn={(v) => {
+        pwdModalState.open = false;
+        pwdAsync.resolve(v);
+    }}
 />
 
 <style>

@@ -114,6 +114,12 @@
 
     onMount(async () => {
         const res = await getAccessToken();
+        if(!res) {
+            console.warn("Cannot get access token");
+            load = "inprogress";
+            onCancel();
+            return;
+        }
         loadRootFolder(res);
     })
 
@@ -121,6 +127,7 @@
         if(!currentToken) {
             new Notice("Login error");
             load = "error";
+            onCancel();
             return;
         }
         token = currentToken;

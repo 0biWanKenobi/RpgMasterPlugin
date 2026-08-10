@@ -102,12 +102,7 @@
         await plugin.saveSettings(MASTER_PLUGIN);
     }
 
-    const pwdModalState = $state({
-        ref: undefined as UserPasswordModal | undefined,
-        open: false,
-        onConfirm: (_: string) => {}
-    })
-
+    let pwdModalOpen = $state(false)
     let pwdAsync = Promise.withResolvers<string|undefined>()
 
 </script>
@@ -136,11 +131,10 @@
         <FolderSelector 
             getAccessToken={async () => {
                 if(!!password) return password
-                pwdModalState.open = true;
-                pwdAsync = Promise.withResolvers<string|undefined>();
+                pwdModalOpen = true;
                 const pwd = await pwdAsync.promise;
                 password = pwd;
-                pwdModalState.open = false;
+                pwdModalOpen = false;
                 return pwd ? getGoogleAccessToken(pwd) : pwd;
             }}
             onSelected={saveDriveFolderToSettings}
@@ -153,16 +147,17 @@
 {/if}
 
 <UserPasswordModal
-    bind:this={pwdModalState.ref}
     title="Please provide your Password"
-    bind:open={pwdModalState.open}
+    bind:open={pwdModalOpen}
     onCancel={() => {
-        pwdModalState.open = false;
+        pwdModalOpen = false;
         pwdAsync.resolve(undefined);
+        pwdAsync = Promise.withResolvers<string|undefined>();
     }}
     onReturn={(v) => {
-        pwdModalState.open = false;
+        pwdModalOpen = false;
         pwdAsync.resolve(v);
+        pwdAsync = Promise.withResolvers<string|undefined>();
     }}
 />
 

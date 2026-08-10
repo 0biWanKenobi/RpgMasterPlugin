@@ -48,9 +48,25 @@
         authUrl: ""
     })
 
-    let modalOpen = $state(false)
-    let modalMsg = $state("")
-    let modalIcon = $state("")
+    let mounted = $state(true)
+    let modalOpen = $derived(mounted && (tokenSetup == "inprogress" || tokenSetup == "complete" || tokenSetup == "error"))
+    const modalUi = $derived.by(() => {
+        switch(tokenSetup){
+            case "complete": return {
+                msg: "Operation completed, you can close this window.",
+                icon: "check-check"
+            }
+            case "error": return {
+                msg: "Something went wrong, close this window and try again.",
+                icon: "circle-x"
+            }
+            default: return {
+                msg: "",
+                icon: ""
+            }
+        }
+    })
+
     const afterLoginButtons = $derived(tokenSetup == "complete")
     let loginInProgress = $state(false)
 
@@ -69,36 +85,14 @@
 
     $effect(() => {
         switch(tokenSetup){
-            case "inprogress":
-                modalOpen = true;
-                modalMsg = "";
-                modalIcon = "";
-                return;
-            case "idle":
-            case "pwdinput":
-                modalOpen = false;
-                modalMsg = "";
-                modalIcon = "";
-                return;
             case "complete":
-                modalOpen = true;
-                modalMsg = "Operation completed, you can close this window.";
-                modalIcon = "check-check";
                 tokenStatus = "set";
+                new Notice("Token saved");
                 return;
             case "error":
-                modalOpen = true;
-                modalMsg = "Something went wrong, close this window and try again.";
-                modalIcon = "circle-x";
+                new Notice("Error: token not saved");
                 return;
         }
-    });
-
-    $effect(() => {
-        switch(tokenSetup){
-            case "complete": new Notice("Token saved"); return;
-            case "error": new Notice("Error: token not saved"); return;
-        } 
     });
 
 
@@ -112,7 +106,7 @@
         })
 
         return () => {
-            modalOpen = false;
+            mounted = false;
         }
     })
 
@@ -164,9 +158,11 @@
         ref: undefined as UserPasswordModal | undefined,
     })
 
+    let pwdAsync = Promise.withResolvers<string|undefined>();
+
     async function getUserPassword() {
         userPwdState.open = true;
-        const pwd = await userPwdState.ref?.onReturn();
+        const pwd = await pwdAsync.promise;
         if (pwd) password = pwd;
         userPwdState.open = false;
         return pwd;
@@ -236,12 +232,15 @@
 
 
     <GoogleDriveConnectModal
-        bind:open={modalOpen}
+        bind:open={
+            () => modalOpen,
+            (v) => tokenSetup = v ? "inprogress" : "idle"
+        }
         bind:loginInProgress
         {afterLoginButtons}
         authUrl={driveSetupCtx.authUrl}
-        bind:statusMsg={modalMsg}
-        bind:statusIcon={modalIcon}
+        bind:statusMsg={modalUi.msg}
+        bind:statusIcon={modalUi.icon}
         onClose={onModalClose}
     />
 
@@ -249,6 +248,14 @@
         bind:this={userPwdState.ref}
         bind:open={userPwdState.open}
         title="Protect your account with a password"
+        onReturn={(pwd) => {
+            pwdAsync.resolve(pwd);
+            pwdAsync = Promise.withResolvers<string|undefined>();
+        }}
+        onCancel={() => {
+            pwdAsync.resolve(undefined);
+            pwdAsync = Promise.withResolvers<string|undefined>();
+        }}
     />
 
 </div>

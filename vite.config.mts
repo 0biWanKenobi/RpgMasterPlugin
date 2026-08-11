@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => ({
 	plugins: [svelte()],
 	build: {
 		lib: {
-			entry: "src/rpgMasterMain.ts",
+			entry: "src/rpgMasterPlugin.ts",
 			formats: ["cjs"],
 			fileName: () => "main.js",
 			cssFileName: "styles"

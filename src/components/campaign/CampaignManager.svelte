@@ -7,7 +7,7 @@
 	import { getAppContext } from "../../context.svelte";
 	import CampaignItem from "./CampaignItem.svelte";
 	import VaultFolderPicker from "./VaultFolderPicker.svelte";
-	import { MASTER_PLUGIN } from "../../capability";
+	import { MASTER_PLUGIN } from "../../utils/capability";
     
     type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
 

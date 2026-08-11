@@ -2,7 +2,7 @@
 	import { SettingItem } from "rpg_shared/ui/obsidian";
     import { getAppContext } from "../../context.svelte";
     import FolderPicker from "../localSelectors/FolderPicker.svelte";
-	import { MASTER_PLUGIN } from "../../capability";
+	import { MASTER_PLUGIN } from "../../utils/capability";
 
     const{settings, plugin} = getAppContext();
 </script>

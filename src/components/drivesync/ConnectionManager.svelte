@@ -2,11 +2,10 @@
     import { UserPasswordModal } from "rpg_shared/ui/custom";
     import { type GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
     import { GoogleDriveConnectModal } from "rpg_shared/ui/custom";
-    import { saveDriveTokens } from "./utilities";
-	import RPGDungeonMasterPlugin from "../../rpgMasterMain";
-    import { type PluginSettings } from "../../settingState.svelte";
+    import { saveDriveTokens } from "../../utils/driveSync/utilities";
+	import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 	import { onMount } from "svelte";
-	import { MASTER_PLUGIN } from "../../capability";
+	import { MASTER_PLUGIN } from "../../utils/capability";
 	import {
         clearGoogleDriveSetupContext,
         createGoogleDriveSetupContext,
@@ -14,11 +13,12 @@
         GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
         GOOGLE_DRIVE_REFRESH_TOKEN_SECRET, 
 		type GoogleDriveSetupContext
-    } from "../../googleDriveProtocol";
+    } from "../../utils/googleDriveProtocol";
 	import { Notice } from "obsidian";
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
 	import { Button } from "rpg_shared/ui/base";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
+	import { type PluginSettings } from "../../utils/interfaces";
 
     export type TokenSetup = "idle" | "inprogress" | "complete" | "pwdinput" | "error";
     export type TokenStatus = "set" | "unset";

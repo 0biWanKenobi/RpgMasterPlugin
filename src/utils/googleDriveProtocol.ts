@@ -1,5 +1,5 @@
 import { App } from "obsidian";
-import type { GDriveSettings } from "./settings/interfaces";
+import type { GDriveSettings } from "./interfaces";
 import type { GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
 import {
     createGoogleDriveSetupContext as createSharedGoogleDriveSetupContext,

@@ -4,7 +4,7 @@
     "-lintignore"
   ],
   "entry": [
-    "src/rpgMasterMain.{js,ts,tsx}"
+    "src/rpgMasterPlugin.{js,ts,tsx}"
   ],
   "ignoreBinaries": ["eslint"],
   "ignoreDependencies": ["@jsrob/svelte-portal", ".*playwright.*"],

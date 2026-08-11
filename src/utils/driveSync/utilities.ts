@@ -1,7 +1,7 @@
 import { GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
-import RPGDungeonMasterPlugin from "../../rpgMasterMain";
-import { MASTER_PLUGIN } from "../../capability";
-import { persistGoogleDriveTokens } from "../../googleDriveProtocol";
+import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
+import { MASTER_PLUGIN } from "../capability";
+import { persistGoogleDriveTokens } from "../googleDriveProtocol";
 
 
 

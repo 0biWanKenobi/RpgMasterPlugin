@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Notice } from "obsidian";
-	import { type GoogleDriveFolderEntry, listFoldersIn } from "../../googleDriveProtocol";
-	import FolderPathIndicator, { type Folder } from "../../settings/driveSync/folderPathIndicator/index.svelte";
+	import { type GoogleDriveFolderEntry, listFoldersIn } from "../../utils/googleDriveProtocol";
+	import FolderPathIndicator, { type Folder } from "./FolderPathIndicator.svelte";
 	import { Button } from "rpg_shared/ui/base";
 	import DriveFolder from "./DriveFolder.svelte";
 	import { onMount } from "svelte";

@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { Notice } from "obsidian";
-	import { areTokensStored, GOOGLE_DRIVE_ACCESS_TOKEN_SECRET, GOOGLE_DRIVE_REFRESH_TOKEN_SECRET } from "../googleDriveProtocol";
-	import ConnectionManager from "../settings/driveSync/connectionManager.svelte";
+	import { areTokensStored, GOOGLE_DRIVE_ACCESS_TOKEN_SECRET, GOOGLE_DRIVE_REFRESH_TOKEN_SECRET } from "../utils/googleDriveProtocol";
+	import ConnectionManager from "./drivesync/ConnectionManager.svelte";
 	import { HeaderWithIcon, UserPasswordModal } from "rpg_shared/ui/custom";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
 	import { Button } from "rpg_shared/ui/base";
-	import FolderSelector from "./ui/FolderSelector.svelte";
-	import { MASTER_PLUGIN } from "../capability";
-	import { saveDriveTokens } from "../settings/driveSync/utilities";
+	import FolderSelector from "./drivesync/FolderSelector.svelte";
+	import { MASTER_PLUGIN } from "../utils/capability";
+	import { saveDriveTokens } from "../utils/driveSync/utilities";
 	import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
 	import { type GoogleDriveTokenSet, refreshGoogleDriveAccessToken } from "rpg_shared/sync/googleDriveAuth";
 	import { onMount } from "svelte";

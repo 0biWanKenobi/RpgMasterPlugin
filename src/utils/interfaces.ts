@@ -1,5 +1,7 @@
 //TODO: move code shared with player plugin to common package
 
+import { SyncState } from "./driveSync/types";
+
 export interface DungeonMasterSettings {
 	id: string;
 	name: string;
@@ -37,4 +39,5 @@ export interface PluginSettings {
 	playerPeerId: string;
 	lastUpdated?: Date;
 	version: string;
+	syncState: SyncState;
 }

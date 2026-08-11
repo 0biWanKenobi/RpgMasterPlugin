@@ -19,7 +19,10 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	},
 	playerPeerId: '',
 	lastUpdated: undefined,
-	version: "1.0.0"
+	version: "1.0.0",
+	syncState: {
+		documents: {},
+	},
 }
 
 

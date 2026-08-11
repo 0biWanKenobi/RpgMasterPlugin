@@ -2,7 +2,7 @@
 	import { Button } from "rpg_shared/ui/base";
 
 
-import { type GoogleDriveFolderEntry } from "../../../googleDriveProtocol";
+import { type GoogleDriveFolderEntry } from "../../utils/googleDriveProtocol";
 
 export type Folder = Omit<GoogleDriveFolderEntry, "mimeType">;
 type Props = {

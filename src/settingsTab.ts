@@ -1,7 +1,7 @@
 import { App, PluginSettingTab } from "obsidian";
 import { Component, ComponentProps, mount, unmount } from "svelte";
-import type RPGDungeonMasterPlugin from "./rpgMasterMain";
-import { MASTER_PLUGIN } from "./capability";
+import type RPGDungeonMasterPlugin from "./rpgMasterPlugin";
+import { MASTER_PLUGIN } from "./utils/capability";
 import AppComponent from "./components/main.svelte";
 import { setAppContext } from "./context.svelte";
 

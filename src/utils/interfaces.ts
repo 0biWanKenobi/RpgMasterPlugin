@@ -25,3 +25,16 @@ export interface GDriveSettings {
 	expiresAt?: number;
 	lastUpdated: Date;
 }
+
+
+export interface PluginSettings {
+	dungeonMaster: DungeonMasterSettings;
+	campaign: {
+		list: CampaignSettings[];
+		rootFolder: string | undefined;
+	}
+	gdriveSettings: GDriveSettings;
+	playerPeerId: string;
+	lastUpdated?: Date;
+	version: string;
+}

@@ -1,10 +1,11 @@
 import type { App, ObsidianProtocolHandler, PluginManifest } from 'obsidian';
 import { Plugin } from 'obsidian';
-import { SettingTab } from './settings';
+import { SettingTab } from './settingsTab';
 import './styles.css'
 import "rpg_shared/styles.css";
-import { MASTER_PLUGIN } from './capability';
-import { createSettingsState, DEFAULT_SETTINGS, snapshotSettings, type PluginSettings } from './settingState.svelte';
+import { MASTER_PLUGIN } from './utils/capability';
+import { createSettingsState, DEFAULT_SETTINGS, snapshotSettings } from './settingState.svelte';
+import { type PluginSettings } from './utils/interfaces';
 
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;

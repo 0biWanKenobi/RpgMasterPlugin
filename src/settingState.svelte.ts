@@ -1,4 +1,4 @@
-import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
+import { PluginSettings } from "./utils/interfaces";
 
 export const DEFAULT_SETTINGS: PluginSettings = {
 	dungeonMaster: {
@@ -22,17 +22,7 @@ export const DEFAULT_SETTINGS: PluginSettings = {
 	version: "1.0.0"
 }
 
-export interface PluginSettings {
-	dungeonMaster: DungeonMasterSettings;
-	campaign: {
-		list: CampaignSettings[];
-		rootFolder: string | undefined;
-	}
-	gdriveSettings: GDriveSettings;
-	playerPeerId: string;
-	lastUpdated?: Date;
-	version: string;
-}
+
 
 export function createSettingsState(
     initial: PluginSettings,

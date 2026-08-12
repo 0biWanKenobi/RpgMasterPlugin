@@ -2,16 +2,15 @@
     import { UserPasswordModal } from "rpg_shared/ui/custom";
     import { type GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
     import { GoogleDriveConnectModal } from "rpg_shared/ui/custom";
-    import { saveDriveTokens } from "../../utils/driveSync/utilities";
+    import { saveDriveTokens } from "../../utils/driveSync/driveSession";
 	import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 	import { onMount } from "svelte";
 	import { MASTER_PLUGIN } from "../../utils/capability";
 	import {
+	    clearAuthentication,
         clearGoogleDriveSetupContext,
         createGoogleDriveSetupContext,
         decryptGoogleDrivePayload,
-        GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
-        GOOGLE_DRIVE_REFRESH_TOKEN_SECRET, 
 		type GoogleDriveSetupContext
     } from "../../utils/googleDriveProtocol";
 	import { Notice } from "obsidian";
@@ -41,7 +40,7 @@
     let tokenSetup = $state<TokenSetup>('idle')
     let tokenStatus = $state<TokenStatus>('unset')
 
-    const app = $derived(() => plugin.app)
+    const app = $derived(plugin.app)
     
     const driveSetupCtx: GoogleDriveSetupContext = $state({
         setupId: "",
@@ -110,16 +109,7 @@
     })
 
     async function onDisconnect() {
-        app().secretStorage.deleteSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET);
-        app().secretStorage.deleteSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET);
-        pgsettings.gdriveSettings = {
-            configured: false,
-            folderId: '',
-            folderPath: '',
-            lastUpdated: new Date(),
-            expiresAt: undefined
-        }
-        plugin.saveSettings(MASTER_PLUGIN)
+        await clearAuthentication(plugin);
         tokenStatus = 'unset';
     }
 
@@ -128,7 +118,7 @@
         tokenStatus = 'unset';
 
         const setupContext = createGoogleDriveSetupContext(
-            app(),
+            app,
             import.meta.env.VITE_GAUTH_URL,
         );
 
@@ -140,7 +130,7 @@
     
     async function onModalClose (connectionCancelled: boolean) {
         if (connectionCancelled) {
-            clearGoogleDriveSetupContext(app(), driveSetupCtx.setupId);
+            clearGoogleDriveSetupContext(app, driveSetupCtx.setupId);
             new Notice("Setup cancelled")
         }
     
@@ -187,7 +177,7 @@
 
         try {
             const tokenSet = await decryptGoogleDrivePayload(
-                app(),
+                app,
                 configuration.setup_id,
                 configuration.payload,
             );
@@ -197,7 +187,7 @@
                 tokenSet,
             );
 
-            clearGoogleDriveSetupContext(app(), configuration.setup_id);
+            clearGoogleDriveSetupContext(app, configuration.setup_id);
             await plugin.saveSettings(MASTER_PLUGIN);
             tokenSetup = "complete";
             new Notice("Google Drive connected")

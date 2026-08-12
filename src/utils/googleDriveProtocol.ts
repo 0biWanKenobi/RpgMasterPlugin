@@ -1,4 +1,4 @@
-import { App } from "obsidian";
+import type { App } from "obsidian";
 import type { GDriveSettings } from "./interfaces";
 import type { GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
 import {
@@ -6,6 +6,8 @@ import {
     decryptGoogleDriveTokenSet,
     encryptObjectToBase64,
 } from "rpg_shared/sync/googleDriveTokenCrypto";
+import type RPGDungeonMasterPlugin from "../rpgMasterPlugin";
+import { MASTER_PLUGIN } from "./capability";
 
 export type GoogleDriveSetupContext = {
     setupId: string;
@@ -94,6 +96,20 @@ export function areTokensStored(app: App) {
         if(secretId == GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) found[1] = true;
     }
     return found[0] && found[1];
+}
+
+export async function clearAuthentication(plugin: RPGDungeonMasterPlugin): Promise<void> {
+    plugin.app.secretStorage.deleteSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET);
+    plugin.app.secretStorage.deleteSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET);
+
+    plugin.getSettings(MASTER_PLUGIN).gdriveSettings = {
+            configured: false,
+            folderId: '',
+            folderPath: '',
+            lastUpdated: new Date(),
+            expiresAt: undefined
+        }
+    await plugin.saveSettings(MASTER_PLUGIN)
 }
 
 export async function listFoldersIn({

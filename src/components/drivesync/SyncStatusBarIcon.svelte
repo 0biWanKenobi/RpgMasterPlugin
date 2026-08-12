@@ -9,12 +9,12 @@
     | "success"
     | "error";
 
-    type Props = {
+    export type SyncStatusBarIconProps = {
         setLabel: (label: string) => void;
         status: SyncStatus;
     } & Record<string, unknown>;
 
-    const { setLabel, status = "unconfigured" }:Props = $props();
+    const { setLabel, status = "unconfigured" }:SyncStatusBarIconProps = $props();
 
     	const statusInfo = {
 		unconfigured: {

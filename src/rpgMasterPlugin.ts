@@ -8,7 +8,7 @@ import { createSettingsState, DEFAULT_SETTINGS, snapshotSettings } from './setti
 import { type PluginSettings } from './utils/interfaces';
 import { mount, unmount } from 'svelte';
 import { setAppContext } from './context.svelte';
-import SyncStatusBarIcon from './components/drivesync/SyncStatusBarIcon.svelte';
+import SyncStatusBarIcon, { SyncStatusBarIconProps } from './components/drivesync/SyncStatusBarIcon.svelte';
 
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;
@@ -57,7 +57,7 @@ class RPGDungeonMasterPlugin extends Plugin {
 					props.setLabel = (label: string) => {
 						statusBarIcon.setAttr('aria-label', label);
 					}
-					return SyncStatusBarIcon(internals, props);
+					return SyncStatusBarIcon(internals, props as SyncStatusBarIconProps);
 				},
 				{
 					target: statusBarIcon,

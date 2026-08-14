@@ -1,7 +1,4 @@
-// settingsState.svelte.ts
-
 import { CampaignSettings, DungeonMasterSettings, GDriveSettings } from "./settings/interfaces";
-
 
 export const DEFAULT_SETTINGS: PluginSettings = {
 	dungeonMaster: {

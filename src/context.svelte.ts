@@ -4,8 +4,7 @@ import { PluginSettings } from "./utils/interfaces";
 
 const [getAppContext, setAppContext] = createContext<{
   plugin: RPGDungeonMasterPlugin,
-  settings: PluginSettings  
-    
+  settings: PluginSettings
 }>()
 
 export {

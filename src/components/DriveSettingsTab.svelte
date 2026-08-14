@@ -1,10 +1,7 @@
 <script lang="ts">
-	import { Notice } from "obsidian";
 	import { 
         areTokensStored,
-        clearAuthentication,
-        GOOGLE_DRIVE_ACCESS_TOKEN_SECRET,
-        GOOGLE_DRIVE_REFRESH_TOKEN_SECRET
+        clearAuthentication
     } from "../utils/googleDriveProtocol";
 	import ConnectionManager from "./drivesync/ConnectionManager.svelte";
 	import { HeaderWithIcon, UserPasswordModal } from "rpg_shared/ui/custom";
@@ -12,11 +9,10 @@
 	import { Button } from "rpg_shared/ui/base";
 	import FolderSelector from "./drivesync/FolderSelector.svelte";
 	import { MASTER_PLUGIN } from "../utils/capability";
-	import { saveDriveTokens } from "../utils/driveSync/driveSession";
-	import { decryptObject } from "rpg_shared/sync/googleDriveTokenCrypto";
-	import { type GoogleDriveTokenSet, refreshGoogleDriveAccessToken } from "rpg_shared/sync/googleDriveAuth";
 	import { onMount } from "svelte";
 	import { getAppContext } from "../context.svelte";
+	import { getGoogleAccessToken, isGoogleAccessTokenExpired } from "../utils/driveSync/driveSession";
+	import { Notice } from "obsidian";
 
     const { plugin, settings } = getAppContext()
 
@@ -29,9 +25,9 @@
     const authExpired = $derived.by(() => {
         const expiresAt = settings.gdriveSettings.expiresAt;
         if(!expiresAt) return "unknown"
-        const remainingMs = expiresAt - Date.now();
+        const expired = isGoogleAccessTokenExpired(expiresAt)
 
-        return remainingMs > 10000 ? "no" : "yes"
+        return expired ? "yes" : "no";
     });
 
     const showFolderSettings = $derived(authExpired == 'no' || !!areTokensStored(plugin.app))
@@ -53,59 +49,23 @@
 
     let password = $state<string|undefined>()
 
-    async function getGoogleAccessToken(pwd: string) {
-        if (authExpired != "no") {
-            const refreshRes = await refreshGoogleAccessToken(pwd);
-            switch (refreshRes) {
-                case "success":
-                    break;
-                case "invalid_password":
-                    password = undefined;
-                    return;
-                case "cannot_authenticate":
-                    password = undefined;
-                    await clearAuthentication(plugin);
-                    return;
-            }
+    async function _getGoogleAccessToken(pwd: string) {
+        const result = await getGoogleAccessToken(pwd, authExpired != 'no', plugin);
+        
+        if(result.success)
+            return result.accessToken;
+
+        new Notice(result.error);
+
+        switch (result.reason) {
+            case "invalid_password":
+                password = undefined;
+                return;
+            case "cannot_authenticate":
+                password = undefined;
+                await clearAuthentication(plugin);
+                return;
         }
-
-        const encryptedAccessToken = plugin.app.secretStorage.getSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET) ?? "";
-        return await decryptObject<string>(
-            pwd, encryptedAccessToken
-        );
-    }
-
-    type RefreshResult = "success" | "invalid_password" | "cannot_authenticate"
-    async function refreshGoogleAccessToken(password: string): Promise<RefreshResult> {
-        const refreshToken: string = await decryptObject(password, plugin.app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET) ?? "")
-
-        if (!refreshToken) {
-            new Notice("Invalid password!")
-            return "invalid_password";
-        }
-        const tokenSet = await refreshGoogleDriveAccessToken(
-            import.meta.env.VITE_GAUTH_URL,
-            refreshToken
-        )
-        if (!tokenSet.success) {
-            new Notice("Credentials refused, please login again");
-            return "cannot_authenticate";
-        }
-
-        await _saveDriveTokens(
-            password,
-            {
-                accessToken: tokenSet.access_token,
-                refreshToken,
-                expiresAt: tokenSet.expiresAt
-            },
-        );
-
-        return "success";
-    }
-
-    async function _saveDriveTokens(password: string, tokenSet: GoogleDriveTokenSet) {
-        await saveDriveTokens(password, tokenSet, plugin);
     }
 
     async function saveDriveFolderToSettings(folderId: string, folderPath: string) {
@@ -144,12 +104,12 @@
     {:else if folderStatus == 'selecting'}
         <FolderSelector 
             getAccessToken={async () => {
-                if(!!password) return getGoogleAccessToken(password)
+                if(!!password) return _getGoogleAccessToken(password)
                 pwdModalOpen = true;
                 const pwd = await pwdAsync.promise;
                 password = pwd;
                 pwdModalOpen = false;
-                return pwd ? getGoogleAccessToken(pwd) : undefined;
+                return pwd ? _getGoogleAccessToken(pwd) : undefined;
             }}
             onSelected={saveDriveFolderToSettings}
             onCancel={() => {

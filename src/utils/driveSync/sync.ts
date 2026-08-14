@@ -11,9 +11,112 @@ import {
 } from "rpg_shared/sync/googleDriveOperations";
 
 import { hashContent } from "./syncDecision";
+import { getGoogleAccessToken, isGoogleAccessTokenExpired } from './driveSession';
+import { getDocumentSyncPolicy } from './documentSyncPolicy';
+import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
+import { MASTER_PLUGIN } from "../capability";
+
+
+export async function syncFile(file: TFile, password: string, plugin: RPGDungeonMasterPlugin) {
+	const settings = plugin.getSettings(MASTER_PLUGIN);
+
+	const policy = getDocumentSyncPolicy(
+		plugin.app,
+		file,
+	);
+
+	if (!policy) {
+		return {
+			success: false as const,
+			error: "Note is not configured for Drive sync",
+			errorMessage: `${file.name} is not an RPG Drive document`,
+		};
+	}
+	if(!policy.sync) {
+		return {
+			success: false as const,
+			error: "Sync is disabled for this Note",
+			errorMessage: `${file.name} has rpg.sync set to false in its frontmatter`,
+		}
+	}
+
+	const folderId = settings.gdriveSettings.folderId;
+
+	if (!folderId) {
+		return {
+			success: false as const,
+			error: "Drive folder not configured",
+			errorMessage: "Select a Google Drive folder first",
+		};
+	}
+
+	const expiresAt = settings.gdriveSettings.expiresAt;
+	const auth = await getGoogleAccessToken(
+		password,
+		isGoogleAccessTokenExpired(expiresAt),
+		plugin,
+	);
+
+	if (!auth.success) return {
+		success: false as const,
+		error: auth.reason,
+		errorMessage: auth.error
+	}
+
+	return syncDocument(
+		plugin.app,
+		file,
+		policy,
+		settings.syncState,
+		auth.accessToken,
+		folderId,
+		() => plugin.saveSettings(MASTER_PLUGIN),
+	);
+}
+
+type SyncDocumentResult =
+	| { success: true; status: "synced" }
+	| { success: true; status: "conflict" }
+	| { success: false; error: string; errorMessage: string };
+
+/** Performs the initial v1 sync and persists its local sync state. */
+/** Synchronizes one RPG document. */
+async function syncDocument(
+	app: App,
+	file: TFile,
+	policy: DocumentSyncPolicy,
+	syncState: SyncState,
+	accessToken: string,
+	folderId: string,
+	saveState: () => Promise<void>,
+): Promise<SyncDocumentResult> {
+	const previousState = syncState.documents[policy.docId];
+
+	if (previousState?.baseSha256) {
+		return syncExistingDocument(
+			app,
+			file,
+			policy,
+			previousState,
+			accessToken,
+			folderId,
+			saveState
+		);
+	}
+
+	return syncInitialDocument(
+		app,
+		file,
+		policy,
+		syncState,
+		accessToken,
+		folderId,
+		saveState,
+	);
+}
 
 /** Ensures a Drive document exists for the local file. */
-export async function bootstrapDriveDocument(
+async function bootstrapDriveDocument(
 	app: App,
 	file: TFile,
 	policy: DocumentSyncPolicy,
@@ -56,48 +159,6 @@ export async function bootstrapDriveDocument(
 		localHash,
 		created: true as const,
 	};
-}
-
-
-type SyncDocumentResult =
-	| { success: true; status: "synced" }
-	| { success: true; status: "conflict" }
-	| { success: false; error: string; errorMessage: string };
-
-/** Performs the initial v1 sync and persists its local sync state. */
-/** Synchronizes one RPG document. */
-export async function syncDocument(
-	app: App,
-	file: TFile,
-	policy: DocumentSyncPolicy,
-	syncState: SyncState,
-	accessToken: string,
-	folderId: string,
-	saveState: () => Promise<void>,
-): Promise<SyncDocumentResult> {
-	const previousState = syncState.documents[policy.docId];
-
-	if (previousState?.baseSha256) {
-		return syncExistingDocument(
-			app,
-			file,
-			policy,
-			previousState,
-			accessToken,
-			folderId,
-			saveState
-		);
-	}
-
-	return syncInitialDocument(
-		app,
-		file,
-		policy,
-		syncState,
-		accessToken,
-		folderId,
-		saveState,
-	);
 }
 
 async function syncExistingDocument(

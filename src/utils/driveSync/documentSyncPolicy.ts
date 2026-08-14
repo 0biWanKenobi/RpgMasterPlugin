@@ -6,30 +6,27 @@ import type {
 
 export type DocumentSyncPolicy = {
 	docId: string;
-	provider: "drive";
+	sync: boolean;
 };
 
-export function parseDocumentSyncPolicy(
+function parseDocumentSyncPolicy(
 	frontmatter: FrontMatterCache | undefined,
 ): DocumentSyncPolicy | null {
 	if (!frontmatter?.rpg) {
 		return null;
 	}
 
-	const { id, sync } = frontmatter.rpg;
+	const { docId, sync } = frontmatter.rpg;
 
 	if (
-		typeof id !== "string" ||
-		id.trim().length === 0 ||
-		sync !== "drive"
+		typeof docId !== "string" ||
+		docId.trim().length === 0 ||
+		typeof sync !== "boolean"
 	) {
 		return null;
 	}
 
-	return {
-		docId: id,
-		provider: "drive",
-	};
+	return frontmatter.rpg;
 }
 
 export function getDocumentSyncPolicy(

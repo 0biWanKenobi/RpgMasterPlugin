@@ -7,7 +7,6 @@ import { setAppContext } from "./context.svelte";
 
 type AppProps = ComponentProps<typeof AppComponent>;
 
-
 class SettingTab extends PluginSettingTab {
 	#plugin: RPGDungeonMasterPlugin;
 
@@ -24,7 +23,6 @@ class SettingTab extends PluginSettingTab {
 			plugin: this.#plugin,
 			settings: this.#plugin.getSettings(MASTER_PLUGIN),
 		});
-
 		return AppComponent(internals, props);
 	};
 

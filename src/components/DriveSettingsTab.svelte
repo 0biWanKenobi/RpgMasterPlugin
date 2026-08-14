@@ -18,18 +18,16 @@
 	import { onMount } from "svelte";
 	import { getAppContext } from "../context.svelte";
 
+    const { plugin, settings } = getAppContext()
 
-    
-    let { plugin } = getAppContext()
     onMount(() =>  {
-        folderStatus = pgSettings.gdriveSettings.folderId ? "set" : "unset";
+        folderStatus = settings.gdriveSettings.folderId ? "set" : "unset";
     })
 
-    const pgSettings = $derived(plugin.getSettings(MASTER_PLUGIN))
     let folderStatus = $state<"unset" | "set" | "selecting">("unset")
     let showEditButton = $state(true)
     const authExpired = $derived.by(() => {
-        const expiresAt = pgSettings.gdriveSettings.expiresAt;
+        const expiresAt = settings.gdriveSettings.expiresAt;
         if(!expiresAt) return "unknown"
         const remainingMs = expiresAt - Date.now();
 
@@ -113,8 +111,8 @@
     async function saveDriveFolderToSettings(folderId: string, folderPath: string) {
         showEditButton = true;
         folderStatus = 'set';
-        pgSettings.gdriveSettings.folderId = folderId;
-        pgSettings.gdriveSettings.folderPath = folderPath;
+        settings.gdriveSettings.folderId = folderId;
+        settings.gdriveSettings.folderPath = folderPath;
         await plugin.saveSettings(MASTER_PLUGIN);
     }
 
@@ -124,13 +122,13 @@
 </script>
 
 
-<ConnectionManager {plugin} pgsettings={pgSettings} bind:password/>
+<ConnectionManager bind:password/>
 
 {#if showFolderSettings}
     <HeaderWithIcon icon={folderStatusIcon} text={folderStatusText} />
 
     {#if folderStatus == 'set'}
-        <SettingItem name={pgSettings.gdriveSettings.folderPath} class="folder-setting">
+        <SettingItem name={settings.gdriveSettings.folderPath} class="folder-setting">
             {#if showEditButton}
                 <Button icon="pencil" onClick={onEditFolder}/>
             {/if}
@@ -156,7 +154,7 @@
             onSelected={saveDriveFolderToSettings}
             onCancel={() => {
                 showEditButton = true;
-                folderStatus = pgSettings.gdriveSettings.folderId ? 'set' : 'unset';
+                folderStatus = settings.gdriveSettings.folderId ? 'set' : 'unset';
             }}
         />
     {/if}

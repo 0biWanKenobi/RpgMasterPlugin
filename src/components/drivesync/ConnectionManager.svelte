@@ -17,7 +17,7 @@
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
 	import { Button } from "rpg_shared/ui/base";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
-	import { type PluginSettings } from "../../utils/interfaces";
+	import { getAppContext } from "../../context.svelte";
 
     export type TokenSetup = "idle" | "inprogress" | "complete" | "pwdinput" | "error";
     export type TokenStatus = "set" | "unset";
@@ -29,13 +29,13 @@
     }
 
     type Props = {
-        plugin: RPGDungeonMasterPlugin,
-        pgsettings: PluginSettings,
         password?: string
     }
 
 
-    let { plugin, pgsettings, password = $bindable() }: Props = $props();
+    let { password = $bindable() }: Props = $props();
+
+    const {plugin, settings} = getAppContext()
 
     let tokenSetup = $state<TokenSetup>('idle')
     let tokenStatus = $state<TokenStatus>('unset')
@@ -95,7 +95,7 @@
     });
 
     $effect(() => {
-        tokenStatus = pgsettings.gdriveSettings.configured ? 'set' : 'unset'
+        tokenStatus = settings.gdriveSettings.configured ? 'set' : 'unset'
     })
 
     onMount(() => {
@@ -135,7 +135,7 @@
         }
     
         await plugin.saveSettings(MASTER_PLUGIN);
-        tokenStatus = pgsettings.gdriveSettings.configured? 'set' : 'unset';
+        tokenStatus = settings.gdriveSettings.configured? 'set' : 'unset';
 
     }
 

@@ -2,7 +2,6 @@ import type { App, ObsidianProtocolHandler, PluginManifest } from 'obsidian';
 import { MarkdownView, Platform, Plugin } from 'obsidian';
 import { SettingTab } from './settingsTab';
 import './styles.css'
-import "rpg_shared/styles.css";
 import { MASTER_PLUGIN } from './utils/capability';
 import { createSettingsState, DEFAULT_SETTINGS, snapshotSettings } from './settingState.svelte';
 import { type PluginSettings } from './utils/interfaces';

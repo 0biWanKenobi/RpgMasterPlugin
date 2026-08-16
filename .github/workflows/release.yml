@@ -1,0 +1,60 @@
+name: Release CI
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to release
+        required: true
+
+permissions:
+  contents: write
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://npm.pkg.github.com
+          scope: "@0biwankenobi"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+
+      - name: Build
+        env:
+          VITE_GAUTH_URL: ${{ vars.VITE_GAUTH_URL }}
+        run: |
+          test -n "$VITE_GAUTH_URL" || {
+            echo "Repository variable VITE_GAUTH_URL is not configured"
+            exit 1
+          }
+          npm run build --if-present
+
+      - name: Pack npm package
+        run: npm pack
+
+      - name: Rename package archive
+        run: mv *.tgz rpg_master_plugin-${{ inputs.tag || github.ref_name }}.tgz
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          files: |
+            *.tgz

@@ -1,39 +1,14 @@
 <script lang="ts">
-	import { sc_randUUID } from "rpg_shared/crypto";
-	import { Notice } from "obsidian";
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
-    import { SettingItem as Setting, Modal, SettingItemGroup } from "rpg_shared/ui/obsidian"
-	import { Button, Input } from "rpg_shared/ui/base";
+    import { Modal } from "rpg_shared/ui/obsidian"
+	import { Button } from "rpg_shared/ui/base";
 	import { getAppContext } from "../../context.svelte";
 	import CampaignItem from "./CampaignItem.svelte";
 	import VaultFolderPicker from "./VaultFolderPicker.svelte";
 	import { MASTER_PLUGIN } from "../../utils/capability";
     
-    type CampaignOnClickCallback = (cmpgnId: string, cmpgnName: string) => Promise<void>;
-
-    type Props = {
-        onCampaignCreated: CampaignOnClickCallback
-    }
-
-    let {onCampaignCreated}: Props = $props()
-
     const{ settings, plugin } = getAppContext();
-
-    let modalOpen = $state(false);
-    let campaignName = $state("");
     const campaignList = $derived(settings.campaign.list)
-
-    const showNewCampaignModal = () => {
-        modalOpen = true
-    };
-
-    const onCreateCampaign = async () => {
-        new Notice('Campaign created!');
-        const campaignId = `rpg_cmpgn_id_${sc_randUUID()}`;
-        await onCampaignCreated(campaignId, campaignName);
-        modalOpen = false;
-    };
-
 
     let deleteCampaignState = $state({
         modal: false,
@@ -67,24 +42,6 @@
     {/each}
 </div>
 
-<Setting>
-    <Button text="Add new Campaign" onClick={showNewCampaignModal}/>
-</Setting>
-
-<Modal
-    bind:open={modalOpen}
-    title="Add Campaign"
->
-    <SettingItemGroup>
-        <Setting name="Campaign Name" description="Name of this awesome campaign">
-            <Input type="text" onChange={(v) => campaignName = v} />
-        </Setting>
-        <Setting name="">
-            <Button text="Create" onClick={onCreateCampaign} />
-        </Setting>
-    </SettingItemGroup>
-</Modal>
-
 <Modal
     bind:open={deleteCampaignState.modal}
     title="Remove Campaign?"
@@ -114,6 +71,12 @@
                 top: 10px;
                 right: 10px;
                 cursor: pointer;
+                display: none;
+            }
+            :hover{
+                .item-icon {
+                    display: flex;
+                }
             }
 
             .plugin-settings-campaign-gallery-item-name {

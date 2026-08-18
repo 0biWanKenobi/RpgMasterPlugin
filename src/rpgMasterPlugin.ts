@@ -9,6 +9,8 @@ import { mount, unmount } from 'svelte';
 import { setAppContext } from './context.svelte';
 import SyncStatusBarIcon, { SyncStatusBarIconProps } from './components/drivesync/SyncStatusBarIcon.svelte';
 import { addTopViewIcon, RPG_SYNC_CLASS } from './utils/driveSync/syncUI';
+import { configureTagMenu } from './utils/contextMenu/tagActions';
+import { refreshCampaignDecorations } from './utils/contextMenu/fileTreeDecoration';
 
 
 
@@ -37,6 +39,10 @@ class RPGDungeonMasterPlugin extends Plugin {
 		else {
 			this.#configureTopViewIcon();
 		}
+
+		configureTagMenu(this);
+
+		refreshCampaignDecorations(this)
 
 	}
 

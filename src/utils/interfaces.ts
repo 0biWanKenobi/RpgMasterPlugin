@@ -12,6 +12,7 @@ export interface DungeonMasterSettings {
 export interface CampaignSettings {
 	id: string;
 	name: string;
+	vaultPath: string,
 	image?: string;
 	masterId: string;
 	playerCount: number;

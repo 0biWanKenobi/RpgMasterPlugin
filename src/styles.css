@@ -39,3 +39,23 @@ body {
 	column-gap: 5px;
 	justify-content: end;
 }
+
+
+/* Campaign tag on Obsidian file tree folders */
+
+.nav-folder-title.rpg-campaign-folder
+	.nav-folder-title-content::after {
+	content: "Campaign";
+
+	margin-inline-start: 0.5em;
+	padding: 1px 5px;
+
+	font-size: 0.75em;
+	font-weight: 500;
+	line-height: 1.3;
+
+	color: var(--text-accent);
+	background-color: var(--background-modifier-hover);
+
+	border-radius: var(--radius-s);
+}

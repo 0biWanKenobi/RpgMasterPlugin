@@ -19,6 +19,10 @@ declare module "obsidian" {
 			appContainerEl: HTMLElement
 		}
 	}
+
+	interface MenuItem {
+		setSubmenu: () => Menu
+	}
 }
 
 declare global {

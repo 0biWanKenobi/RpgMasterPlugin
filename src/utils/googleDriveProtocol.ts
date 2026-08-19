@@ -70,8 +70,7 @@ export async function persistGoogleDriveTokens(
     tokenSet: GoogleDriveTokenSet,
     password: string,
 ): Promise<GDriveSettings> {
-    const existingRefreshToken = app.secretStorage.getSecret(GOOGLE_DRIVE_REFRESH_TOKEN_SECRET);
-    const encryptedRefreshToken = existingRefreshToken || await encryptObjectToBase64(password, tokenSet.refreshToken || "");
+    const encryptedRefreshToken = await encryptObjectToBase64(password, tokenSet.refreshToken || "");
     const encryptedAccessToken = await encryptObjectToBase64(password, tokenSet.accessToken)
 
     app.secretStorage.setSecret(GOOGLE_DRIVE_ACCESS_TOKEN_SECRET, encryptedAccessToken);

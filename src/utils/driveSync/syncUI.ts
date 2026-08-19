@@ -1,13 +1,10 @@
 import { MarkdownView, Menu, Notice, TFile } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
-import { Component, ComponentProps, mount, unmount } from "svelte";
+import { unmount } from "svelte";
 import { syncFile } from "./sync";
-import { UserPasswordModal } from "rpg_shared/ui/custom";
-import { createState } from "../../helpers.svelte";
+import { addPwdModal } from "../pwdModal";
 
 export const RPG_SYNC_CLASS = 'rpg-master-sync'
-
-type PwdModalState = {value: boolean}
 
 export async function addTopViewIcon(view: MarkdownView, plugin: RPGDungeonMasterPlugin) {
 
@@ -43,10 +40,22 @@ export async function addTopViewIcon(view: MarkdownView, plugin: RPGDungeonMaste
     )
 
     const pwConfig = addPwdModal(
-        view,
-        file,
-        plugin,
-        pwModalOpen
+        view.containerEl,
+        pwModalOpen,
+        {
+            onReturnPwd(v) {
+                if(!file || ! v) return;
+                syncFile(file, v, plugin)
+                .then( r => {
+                    if(r.success && r.status == 'synced'){
+                        new Notice("Note uploaded")
+                    }
+                    if(!r.success){
+                        new Notice(r.errorMessage)
+                    }
+                })
+            },
+        }
     )
     pwModalOpen = pwConfig.pwModalOpen
 
@@ -90,50 +99,7 @@ function addAction(
     return action;
 }
 
-function addPwdModal(
-    view: MarkdownView,
-    file: TFile,
-    plugin: RPGDungeonMasterPlugin,
-    pwModalOpen: PwdModalState
-) {
-    const modalWrapper: Component<ComponentProps<typeof UserPasswordModal>> = (internals, props) => {
-        pwModalOpen = createState(false);
-        return UserPasswordModal(internals, props)
-    }
 
-    const pwdModal = mount(
-        modalWrapper,
-        {
-            target: view.containerEl,
-            props: {
-                get open(){ return pwModalOpen.value},
-                set open(v) { pwModalOpen.value = v},
-                title: "Provide password",
-                onReturn(v) {
-                    pwModalOpen.value = false;
-                    if(!file || ! v) return;
-                    syncFile(file, v, plugin)
-                        .then( r => {
-                            if(r.success && r.status == 'synced'){
-                                new Notice("Note uploaded")
-                            }
-                            if(!r.success){
-                                new Notice(r.errorMessage)
-                            }
-                        })
-                },
-                onCancel() {
-                    pwModalOpen.value = false
-                }
-            }
-        }
-    )
-
-    return {
-        pwdModal,
-        pwModalOpen
-    }
-}
 
 async function writeYamlConfig(file: TFile, plugin: RPGDungeonMasterPlugin){
 

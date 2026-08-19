@@ -10,9 +10,9 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"start_test_server": "vite test --host 127.0.0.1 --port 5173 --strictPort --open",
 		"lint": "eslint .",
-		"yalc:add:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} link rpg_shared",
-		"yalc:update:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} update rpg_shared",
-		"yalc:remove:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} remove rpg_shared",
+		"yalc:add:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} link @0biwankenobi/rpg-shared && ln -sfnT @0biwankenobi/rpg-shared node_modules/rpg_shared",
+		"yalc:update:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} update @0biwankenobi/rpg-shared",
+		"yalc:remove:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} remove @0biwankenobi/rpg-shared",
 		"knip": "knip"
 	},
 	"keywords": [],

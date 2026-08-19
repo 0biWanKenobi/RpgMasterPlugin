@@ -76,7 +76,7 @@
                 buttonAction: async () => {
                     const token = await getAccessToken();
                     if(!token) return;
-                    const response = await createFolder(token, folderName, folderNavigation.currentFolderId);
+                    const response = await createFolder(token, folderName, {parentFolderId: folderNavigation.currentFolderId});
                     if(!response.success) {
                         console.error(response.error);
                         new Notice(response.errorMessage)

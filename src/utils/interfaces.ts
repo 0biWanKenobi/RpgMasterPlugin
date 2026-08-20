@@ -11,6 +11,10 @@ export interface DungeonMasterSettings {
 
 export interface CampaignSettings {
 	id: string;
+	/**
+	 * Drive folder id
+	 */
+	syncId?: string,
 	name: string;
 	vaultPath: string,
 	image?: string;
@@ -23,7 +27,13 @@ export interface CampaignSettings {
 
 export interface GDriveSettings {
 	configured: boolean;
+	/**
+	 * Drive root folder id
+	 */
 	folderId: string;
+	/**
+	 * Drive root folder path
+	 */
 	folderPath: string;
 	expiresAt?: number;
 	lastUpdated: Date;

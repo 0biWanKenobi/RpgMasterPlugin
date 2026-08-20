@@ -9,14 +9,16 @@ import { mount, unmount } from 'svelte';
 import { setAppContext } from './context.svelte';
 import SyncStatusBarIcon, { SyncStatusBarIconProps } from './components/drivesync/SyncStatusBarIcon.svelte';
 import { addTopViewIcon, RPG_SYNC_CLASS } from './utils/driveSync/syncUI';
-import { configureTagMenu } from './utils/contextMenu/tagActions';
+import { configureContextMenu } from './utils/contextMenu/fileTreeActions';
 import { refreshCampaignDecorations } from './utils/contextMenu/fileTreeDecoration';
+import { CampaignRegistry } from './utils/registry/campaignRegistry.svelte';
 
 
 
 class RPGDungeonMasterPlugin extends Plugin {
 	#settings!: PluginSettings;
 	#handlerRegistered = false;
+	#campaignRegistry!: CampaignRegistry;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
@@ -40,9 +42,11 @@ class RPGDungeonMasterPlugin extends Plugin {
 			this.#configureTopViewIcon();
 		}
 
-		configureTagMenu(this);
+		configureContextMenu(this);
 
 		refreshCampaignDecorations(this)
+
+		this.#campaignRegistry = CampaignRegistry(this);
 
 	}
 
@@ -117,7 +121,10 @@ class RPGDungeonMasterPlugin extends Plugin {
 		this.#handlerRegistered = true;
 	}
 
-
+	getCampaignRegistry(token: typeof MASTER_PLUGIN) {
+		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
+		return this.#campaignRegistry
+	}
 }
 
 Object.freeze(RPGDungeonMasterPlugin.prototype);

@@ -99,8 +99,6 @@ function addAction(
     return action;
 }
 
-
-
 async function writeYamlConfig(file: TFile, plugin: RPGDungeonMasterPlugin){
 
     let currSyncVal = false
@@ -111,6 +109,6 @@ async function writeYamlConfig(file: TFile, plugin: RPGDungeonMasterPlugin){
 
         frontmatter.rpg ??= {};
         frontmatter.rpg.sync = !currSyncVal;
-        frontmatter.rpg.docId ??= crypto.randomUUID();		
+        frontmatter.rpg.docId ??= crypto.randomUUID();
     }).then( () => !currSyncVal)
 }

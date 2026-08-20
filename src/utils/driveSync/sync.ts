@@ -17,13 +17,14 @@ import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { MASTER_PLUGIN } from "../capability";
 
 
-export async function syncFile(file: TFile, password: string, plugin: RPGDungeonMasterPlugin) {
+export async function syncFile(
+	file: TFile,
+	password: string,
+	plugin: RPGDungeonMasterPlugin
+) {
 	const settings = plugin.getSettings(MASTER_PLUGIN);
 
-	const policy = getDocumentSyncPolicy(
-		plugin.app,
-		file,
-	);
+	const policy = getDocumentSyncPolicy( plugin.app,file );
 
 	if (!policy) {
 		return {
@@ -40,15 +41,27 @@ export async function syncFile(file: TFile, password: string, plugin: RPGDungeon
 		}
 	}
 
-	const folderId = settings.gdriveSettings.folderId;
+	const campaign = plugin
+    .getCampaignRegistry(MASTER_PLUGIN)
+    .findForFile(file);
+	
+	// we fallback to root folder in case of no campaign, because a DM might be syncing other notes that do not
+	// belong to any campaigns
+	const folderId = campaign
+		? campaign.syncId
+		: settings.gdriveSettings.folderId;
 
 	if (!folderId) {
-		return {
-			success: false as const,
-			error: "Drive folder not configured",
-			errorMessage: "Select a Google Drive folder first",
-		};
-	}
+    return {
+        success: false as const,
+        error: campaign
+            ? "Campaign is not configured for Drive sync"
+            : "Drive folder not configured",
+        errorMessage: campaign
+            ? `Campaign ${campaign.name} has no syncId`
+            : "No Drive root folder id in gdrivesettings.folderId",
+    };
+}
 
 	const expiresAt = settings.gdriveSettings.expiresAt;
 	const auth = await getGoogleAccessToken(

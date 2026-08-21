@@ -9,7 +9,12 @@ export interface DungeonMasterSettings {
 	lastUpdated: Date;
 }
 
-export interface CampaignSettings {
+interface CampaignSettings {
+	list: CampaignConfig[];
+	rootFolder: string | undefined;
+}
+
+export interface CampaignConfig {
 	id: string;
 	/**
 	 * Drive folder id
@@ -42,10 +47,7 @@ export interface GDriveSettings {
 
 export interface PluginSettings {
 	dungeonMaster: DungeonMasterSettings;
-	campaign: {
-		list: CampaignSettings[];
-		rootFolder: string | undefined;
-	}
+	campaign: CampaignSettings
 	gdriveSettings: GDriveSettings;
 	playerPeerId: string;
 	lastUpdated?: Date;

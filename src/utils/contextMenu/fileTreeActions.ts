@@ -1,7 +1,7 @@
 import { Notice, TFolder } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { MASTER_PLUGIN } from "../capability";
-import { CampaignSettings, PluginSettings } from "../interfaces";
+import { CampaignConfig, PluginSettings } from "../interfaces";
 import { createFolder } from "rpg_shared/sync/googleDriveOperations";
 import { addPwdModal } from "../pwdModal";
 import { getGoogleAccessToken, isGoogleAccessTokenExpired } from "../driveSync/driveSession";
@@ -14,7 +14,7 @@ async function tagAsCampaign(
     folderName: string
 ) {
     
-    const campaign: CampaignSettings = {
+    const campaign: CampaignConfig = {
         id: 'cmpgn_' + window.crypto.randomUUID(),
         vaultPath: folderPath,
         name: folderName,

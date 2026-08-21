@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { MASTER_PLUGIN } from "../capability";
-import { CampaignSettings } from "../interfaces";
+import { CampaignConfig } from "../interfaces";
 
 export type CampaignRegistry = ReturnType<typeof CampaignRegistry>
 
@@ -12,7 +12,7 @@ export const CampaignRegistry = (_plugin: RPGDungeonMasterPlugin) => {
 
     const campaignPathMap = $derived( new Map(settings.campaign.list.map( c => [c.vaultPath, c])))
 
-    async function add(campaign: CampaignSettings) {
+    async function add(campaign: CampaignConfig) {
         settings.campaign.list.push(campaign);
         await plugin.saveSettings(MASTER_PLUGIN);
     }

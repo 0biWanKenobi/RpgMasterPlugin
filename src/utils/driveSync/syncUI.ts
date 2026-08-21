@@ -1,4 +1,4 @@
-import { MarkdownView, Menu, Notice, TFile } from "obsidian";
+import { MarkdownView, Menu, Notice, setIcon, setTooltip, TFile } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { unmount } from "svelte";
 import { syncFile } from "./sync";
@@ -31,7 +31,11 @@ export async function addTopViewIcon(view: MarkdownView, plugin: RPGDungeonMaste
         () => {
             writeYamlConfig(file, plugin)
                 // duplicates the callback registered above, but it's for added safety
-                .then((v) => sync = v) 
+                .then((v) => {
+                    sync = v;
+                    setIcon(action, sync ? "cloud-sync" : "cloud-off")
+                    setTooltip(action, sync ? "Sync Enabled" : "Sync Disabled")
+                }) 
         },
         () => {
             pwModalOpen.value = true
@@ -71,17 +75,22 @@ function addAction(
     onSync: () => void,
     getSync: () => boolean
 ){
+    const syncActive = getSync();
+
     const action = view.addAction(
-        "cloud-sync",
-        "RPG Sync",
+        syncActive ? "cloud-check" : "cloud-off",
+        syncActive ? "Sync Enabled" : "Sync Disabled",
         (ev) => {			
             const menu = new Menu();
             
+            const syncActive = getSync();
             menu.addItem((item) => {
                 item
-                    .setTitle("Toggle Drive Sync")
-                    .setIcon('cloud-sync')
-                    .onClick(onToggleSync)
+                .onClick(onToggleSync)
+                if(syncActive)
+                    item .setTitle("Disable Drive Sync").setIcon('cloud-off')
+                else 
+                    item.setTitle("Enable Drive Sync").setIcon('cloud-check')
             })
             if(getSync()){
                 menu.addItem((item) => {

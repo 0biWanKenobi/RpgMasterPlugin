@@ -37,10 +37,8 @@ class RPGDungeonMasterPlugin extends Plugin {
 		this.addSettingTab(settingTab);
 		if(Platform.isDesktop) {
 			this.#addStatusBarIcon();
-		}		
-		else {
-			this.#configureTopViewIcon();
 		}
+		this.#configureTopViewIcon();
 
 		configureContextMenu(this);
 

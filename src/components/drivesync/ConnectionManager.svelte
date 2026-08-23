@@ -3,7 +3,6 @@
     import { type GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
     import { GoogleDriveConnectModal } from "rpg_shared/ui/custom";
     import { saveDriveTokens } from "../../utils/driveSync/driveSession";
-	import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 	import { onMount } from "svelte";
 	import { MASTER_PLUGIN } from "../../utils/capability";
 	import {
@@ -31,7 +30,6 @@
     type Props = {
         password?: string
     }
-
 
     let { password = $bindable() }: Props = $props();
 
@@ -206,8 +204,17 @@
 <div class="connection-manager">
     <div id="testbtn"></div>
     <HeaderWithIcon icon={connectionState.icon} text={connectionState.label} />
+    
     {#if tokenStatus == 'unset'}
-        <Button icon="cloud" text="Connect" onClick={onConnect} />    
+        <div style="display: flex; align-items:center; column-gap: 5px;">
+            <Button icon="cloud" text="Connect" onClick={onConnect} loading={tokenSetup != "idle"}/>
+            {#if loginInProgress}
+            <Button warning text="Cancel" onClick={() => {
+                loginInProgress = false;
+                tokenSetup = "idle"
+            }}/>
+            {/if}
+        </div>
     {:else if tokenStatus == 'set'}
         <SettingItem name="Connection status" description="Connected">
             <Button icon="refresh-ccw" text="Reconnect" onClick={onConnect}/>
@@ -218,7 +225,9 @@
     <GoogleDriveConnectModal
         bind:open={
             () => modalOpen,
-            (v) => tokenSetup = v ? "inprogress" : "idle"
+            (v) => {
+                tokenSetup = v ? "inprogress" : "idle"
+            }
         }
         bind:loginInProgress
         {afterLoginButtons}

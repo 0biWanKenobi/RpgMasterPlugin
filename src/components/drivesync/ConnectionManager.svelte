@@ -64,7 +64,7 @@
         }
     })
 
-    const afterLoginButtons = $derived(tokenSetup == "complete")
+    const afterLoginButtons = $derived(tokenSetup == "complete" || tokenSetup == "error")
     let loginInProgress = $state(false)
 
 

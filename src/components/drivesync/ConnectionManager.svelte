@@ -19,8 +19,6 @@
 	import { getAppContext } from "../../context.svelte";
 
     export type TokenSetup = "idle" | "inprogress" | "complete" | "pwdinput" | "error";
-    export type TokenStatus = "set" | "unset";
-
     type RpgNexusConfiguration = {
         action: string,
         setup_id?: string,
@@ -36,7 +34,7 @@
     const {plugin, settings} = getAppContext()
 
     let tokenSetup = $state<TokenSetup>('idle')
-    let tokenStatus = $state<TokenStatus>('unset')
+    let showAsConnected = $derived(settings.gdriveSettings.configured && tokenSetup == 'idle')
 
     const app = $derived(plugin.app)
     
@@ -69,7 +67,7 @@
 
 
     const connectionState = $derived(
-        tokenStatus == 'unset' ?    
+        showAsConnected == false ?    
         {
             icon: 'cloud-off',
             label: "Google Drive Not Configured",
@@ -79,22 +77,6 @@
             label: 'Google Drive Connected',
         }
     )
-
-    $effect(() => {
-        switch(tokenSetup){
-            case "complete":
-                tokenStatus = "set";
-                new Notice("Token saved");
-                return;
-            case "error":
-                new Notice("Error: token not saved");
-                return;
-        }
-    });
-
-    $effect(() => {
-        tokenStatus = settings.gdriveSettings.configured ? 'set' : 'unset'
-    })
 
     onMount(() => {
         plugin.registerObsidianProtocolHandler("rpg_nexus_configuration", (params) => {
@@ -108,12 +90,10 @@
 
     async function onDisconnect() {
         await clearAuthentication(plugin);
-        tokenStatus = 'unset';
     }
 
     async function onConnect() {
         tokenSetup = 'idle';
-        tokenStatus = 'unset';
 
         const setupContext = createGoogleDriveSetupContext(
             app,
@@ -133,8 +113,6 @@
         }
     
         await plugin.saveSettings(MASTER_PLUGIN);
-        tokenStatus = settings.gdriveSettings.configured? 'set' : 'unset';
-
     }
 
     let userPwdState = $state({
@@ -205,21 +183,21 @@
     <div id="testbtn"></div>
     <HeaderWithIcon icon={connectionState.icon} text={connectionState.label} />
     
-    {#if tokenStatus == 'unset'}
+    {#if showAsConnected}
+        <SettingItem name="Connection status" description="Connected">
+            <Button icon="refresh-ccw" text="Reconnect" onClick={onConnect}/>
+            <Button icon="log-out" tooltip="Disconnect" warning onClick={onDisconnect}/>
+        </SettingItem>
+    {:else}
         <div style="display: flex; align-items:center; column-gap: 5px;">
             <Button icon="cloud" text="Connect" onClick={onConnect} loading={tokenSetup != "idle"}/>
             {#if loginInProgress}
             <Button warning text="Cancel" onClick={() => {
                 loginInProgress = false;
-                tokenSetup = "idle"
+                tokenSetup = "idle";
             }}/>
             {/if}
         </div>
-    {:else if tokenStatus == 'set'}
-        <SettingItem name="Connection status" description="Connected">
-            <Button icon="refresh-ccw" text="Reconnect" onClick={onConnect}/>
-            <Button icon="log-out" tooltip="Disconnect" warning onClick={onDisconnect}/>
-        </SettingItem>
     {/if}
 
     <GoogleDriveConnectModal

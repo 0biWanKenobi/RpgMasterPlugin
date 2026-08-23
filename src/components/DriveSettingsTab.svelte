@@ -12,7 +12,7 @@
 	import { onMount } from "svelte";
 	import { getAppContext } from "../context.svelte";
 	import { getGoogleAccessToken, isGoogleAccessTokenExpired } from "../utils/driveSync/driveSession";
-	import { Notice } from "obsidian";
+	import { Notice, Platform } from "obsidian";
 
     const { plugin, settings } = getAppContext()
 
@@ -90,7 +90,7 @@
     {#if folderStatus == 'set'}
         <SettingItem name={settings.gdriveSettings.folderPath} class="folder-setting">
             {#if showEditButton}
-                <Button icon="pencil" onClick={onEditFolder}/>
+                <Button class={Platform.isMobile ? "clickable-icon" : ""} icon="pencil" onClick={onEditFolder}/>
             {/if}
         </SettingItem>
     {:else if folderStatus == 'unset' && areTokensStored(plugin.app)}
@@ -141,5 +141,22 @@
         padding-block: var(--size-4-1);
         padding-inline: var(--size-4-2);
         border-radius: var(--setting-items-radius);
+    }
+
+    :global(.is-phone .modal .setting-item) {
+         &.folder-setting {
+            flex-direction: row;
+            align-items: center;
+
+            :global(.setting-item-info) {
+                align-self: auto;
+            }
+
+            :global(.setting-item-control) {
+                align-items: center;
+                width: unset;
+                flex: 0 1 auto;
+            }
+         }
     }
 </style>

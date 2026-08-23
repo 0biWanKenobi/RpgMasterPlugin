@@ -1,4 +1,4 @@
-import { Notice, TFolder } from "obsidian";
+import { Component, Notice, TFolder } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { MASTER_PLUGIN } from "../capability";
 import { CampaignConfig, PluginSettings } from "../interfaces";
@@ -115,6 +115,7 @@ export async function configureContextMenu(plugin: RPGDungeonMasterPlugin) {
                             .addItem(item => {
                                 item.setTitle("Sync with Drive")
                                     .onClick(async () => {
+                                        menu.close();
                                         let modalOpen = { value: false }
 
                                         const modalData = addPwdModal(

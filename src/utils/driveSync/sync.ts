@@ -54,12 +54,12 @@ export async function syncFile(
 	if (!folderId) {
     return {
         success: false as const,
-        error: campaign
+		error: campaign
+			? `Campaign ${campaign.name} has no syncId`
+			: "No Drive root folder id in gdrivesettings.folderId",
+        errorMessage: campaign
             ? "Campaign is not configured for Drive sync"
             : "Drive folder not configured",
-        errorMessage: campaign
-            ? `Campaign ${campaign.name} has no syncId`
-            : "No Drive root folder id in gdrivesettings.folderId",
     };
 }
 

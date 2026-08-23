@@ -1,6 +1,6 @@
 {
 	"name": "rpg-master-plugin",
-	"version": "1.0.0",
+	"version": "0.0.5",
 	"description": "An Obsidian plugin to play RPG games with friends. This is the master plugin, which manages the game state and communicates with player plugins.",
 	"main": "main.js",
 	"type": "module",
@@ -38,6 +38,6 @@
 	},
 	"dependencies": {
 		"obsidian": "1.12.3",
-		"rpg_shared": "npm:@0biwankenobi/rpg-shared@^0.0.6"
+		"rpg_shared": "npm:@0biwankenobi/rpg-shared@^0.0.7"
 	}
 }

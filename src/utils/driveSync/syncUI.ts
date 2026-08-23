@@ -61,12 +61,19 @@ export async function addTopViewIcon(view: MarkdownView, plugin: RPGDungeonMaste
             },
         }
     )
-    pwModalOpen = pwConfig.pwModalOpen
+    pwModalOpen = pwConfig.pwModalOpen;
 
-    plugin.register(() => {
+    let cleanedUp = false;
+    function cleanUp(){
+        if(cleanedUp) return;
+        cleanedUp = true;
+
         action.remove();
         unmount(pwConfig.pwdModal);
-    });
+    }
+
+    view.register(cleanUp);
+    plugin.register(cleanUp);
 }
 
 function addAction(

@@ -30,7 +30,8 @@ export function addPwdModal(
                     actions.onReturnPwd?.(v)
                 },
                 onCancel() {
-                    pwModalOpen.value = false
+                    pwModalOpen.value = false;
+                    actions.onCancel?.()
                 }
             }
         }

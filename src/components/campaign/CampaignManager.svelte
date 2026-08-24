@@ -48,7 +48,7 @@
 >
     <div class="confirm-modal-buttons">
         <Button warning onClick={onDeleteCampaign}>Yes</Button>
-        <Button onClick={() => deleteCampaignState.modal = false}>No</Button>
+        <Button onClick={() => {deleteCampaignState.modal = false}}>No</Button>
     </div>
 </Modal>
 

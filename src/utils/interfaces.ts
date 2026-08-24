@@ -9,7 +9,7 @@ export interface DungeonMasterSettings {
 	lastUpdated: Date;
 }
 
-interface CampaignSettings {
+export interface CampaignSettings {
 	list: CampaignConfig[];
 	rootFolder: string | undefined;
 }

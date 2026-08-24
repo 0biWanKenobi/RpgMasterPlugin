@@ -1,11 +1,14 @@
-import { Component, Notice, TFolder } from "obsidian";
-import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
+import { Menu, type MenuItem, Notice, TFolder } from "obsidian";
+import type RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { MASTER_PLUGIN } from "../capability";
-import { CampaignConfig, PluginSettings } from "../interfaces";
+import type { CampaignConfig, PluginSettings } from "../interfaces";
 import { createFolder } from "rpg_shared/sync/googleDriveOperations";
 import { addPwdModal } from "../pwdModal";
 import { getGoogleAccessToken, isGoogleAccessTokenExpired } from "../driveSync/driveSession";
-import { unmount } from "svelte";
+import { mount, unmount } from "svelte";
+import OutsideVaultInfo from "./outsideVaultInfo.svelte";
+import { Toggle } from "rpg_shared/ui/base";
+import { hasParentCampaign } from "./utils";
 
 async function tagAsCampaign(
     plugin: RPGDungeonMasterPlugin,
@@ -47,7 +50,11 @@ async function deleteCampaign(
  */
 export async function configureContextMenu(plugin: RPGDungeonMasterPlugin) {
 
-    async function createCampaignFolder(pluginSettings: PluginSettings, campaignIndex: number, pwd: string){
+    let pluginSettings: PluginSettings = undefined as unknown as PluginSettings;
+    let campaignIndex = -1;
+    let rootMenu: Menu = undefined as unknown as Menu;
+
+    async function createCampaignFolder(pwd: string){
         const tk = await getGoogleAccessToken(
             pwd,
             isGoogleAccessTokenExpired(pluginSettings.gdriveSettings.expiresAt),
@@ -75,7 +82,183 @@ export async function configureContextMenu(plugin: RPGDungeonMasterPlugin) {
             campaign.syncId = response.folder.id;
             await plugin.saveSettings(MASTER_PLUGIN);
         }
+    }
 
+
+    /**
+     * Asks user for password, then tries to create folder on Drive
+     */
+    async function handleDriveSyncSelected() {
+        rootMenu.close();
+        let modalOpen = { value: false }
+
+        const modalData = addPwdModal(
+            activeDocument.body,
+            modalOpen,
+            {
+                async onReturnPwd(v) {
+                    unmount(modalData.pwdModal)
+                    if(!v) return;
+                    await createCampaignFolder(v);
+                },
+                onCancel() {
+                    unmount(modalData.pwdModal)
+                },
+            }
+        )
+        modalData.pwModalOpen.value = true;
+    }
+
+    /**
+     * Add options for a folder already marked as campaign.
+     * @param subMenu 2nd level context menu
+     * @returns `void`
+     */
+    function addOptionsForCampaign(subMenu: Menu){
+        subMenu
+            .addItem(item => {
+                item.setTitle("Remove Campaign (keeps folder)")
+                    .onClick(async () => {
+                        await deleteCampaign(plugin, pluginSettings, campaignIndex);
+                        new Notice("Campaign removed")
+                    })
+            })
+
+        const campaign = campaignIndex >= 0 ? pluginSettings.campaign.list.at(campaignIndex)! : undefined;
+        if(campaign?.syncId) return;
+        subMenu
+            .addItem(item => {
+                item.setTitle("Sync with Drive")
+                    .onClick(handleDriveSyncSelected)
+
+            })
+    }
+
+    /**
+     * Add options for a folder that is not marked as campaign.
+     * @param subMenu 2nd level context menu
+     */
+    function addOptionsForFolder(subMenu: Menu, file: TFolder) {
+
+        if(hasParentCampaign(pluginSettings.campaign, file)) {
+            subMenu
+            .addItem( it => it
+                .setTitle("Cannot create nested Campaigns")
+                .setIcon("info")
+                .setIsLabel(true)
+            )
+            return;
+        }
+
+
+        const syncOption = createFragment();
+        let target: HTMLDivElement | undefined;
+        syncOption.createDiv(undefined, el => {
+            el.setCssStyles({
+                display: "flex",
+                columnGap: "2px",
+                alignContent: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                color: "var(--text-normal)"
+            })
+            el.createDiv(undefined,  sp => sp.setText("Sync Now?"))
+            target = el.createDiv()
+        })
+
+        let syncNow = false;
+        mount(Toggle, {
+            props: {
+                value: false,
+                onChange(v) { syncNow = v },
+            },
+            target: target!
+        })
+
+        subMenu.addItem(item => {
+            item
+                .setTitle("Set Folder As Campaign")
+                .setIsLabel(true)
+                .onClick(async () => {
+                    await tagAsCampaign(plugin, pluginSettings, file.path, file.name)
+                    new Notice("Campaign Folder initialized")
+                    if(syncNow) {
+                        campaignIndex = pluginSettings.campaign.list.findIndex( c => c.vaultPath == file.path)
+                        await handleDriveSyncSelected()
+                    }
+                })
+        }).addItem(item => {
+            item.setTitle(syncOption).setDisabled(true)
+        })
+    }
+
+    /**
+     * Adds an option to configure the Vault Location, warning the user that it is
+     * currently missing.
+     * @param subMenu 2nd level context menu
+     */
+    function addNoVaultLocation(subMenu: Menu){
+        subMenu
+         .addItem( it => it
+            .setTitle("Missing Vault Location")
+            .setIcon("info")
+            .setIsLabel(true)
+        )
+        .addSeparator()
+        .addItem( it => it
+            .setTitle("Select a Vault Location for your campaigns")
+            .setIcon("folder-cog")
+            .onClick(async () => {
+                const setting = (plugin.app as any).setting;
+                await setting.open()
+                setting.openTabById(plugin.manifest.id);
+            })
+        );
+    }
+
+    /**
+     * Adds a warning subMenu for when user tries to configure a folder as Campaign
+     * and the folder is outside the campaigns root
+     * @param subMenu 2nd level context menu
+     * @param campaignsFolder path of campaigns root folder
+     * @returns `void`
+     */
+    function addOutsideOfRootWarning(subMenu: Menu, campaignsFolder: string){
+        const detailFrg = createFragment();
+
+        const component = mount(
+            OutsideVaultInfo,
+            {
+                props: { campaignsFolder },
+                target: detailFrg.createDiv("info", el => {
+                    el.setCssStyles({
+                        whiteSpace: "normal",
+                    })
+                })
+            }
+        )
+
+        subMenu
+         .addItem( it => it
+            .setTitle(detailFrg)
+            .setIcon("info")
+            .setIsLabel(true)
+        )
+
+        return component;
+    }
+
+    /**
+     * Utility function that creates the root menu "RPG Master" option
+     * @param configure menu configuration callback, as root menu and 2level menu as params
+     */
+    function bootstrapMenu(configure: (item: MenuItem, subMenu: Menu) => void){        
+        rootMenu
+            .addSeparator()
+            .addItem((item) => {
+                item.setTitle("RPG Master");
+                configure(item, item.setSubmenu())
+            })
     }
 
     plugin.registerEvent(
@@ -83,71 +266,37 @@ export async function configureContextMenu(plugin: RPGDungeonMasterPlugin) {
 
             if (!(file instanceof TFolder)) return;
 
-            const pluginSettings = plugin.getSettings(MASTER_PLUGIN); 
+            rootMenu = menu;
+
+            pluginSettings = plugin.getSettings(MASTER_PLUGIN); 
             const campaignsRoot = pluginSettings.campaign.rootFolder;
-            if(!campaignsRoot) return;
+            if(!campaignsRoot){
+                bootstrapMenu((_, subMenu) => {
+                    addNoVaultLocation(subMenu);
+                })
+                return;
+            }
 
             const canBeCampaign = file.path.startsWith(`${campaignsRoot}/`);
 
-	        if (!canBeCampaign) return;
+	        if (!canBeCampaign) {
+                bootstrapMenu((_, subMenu) => {
+                    const component = addOutsideOfRootWarning(subMenu, campaignsRoot)
+                    rootMenu.register(() => unmount(component))
+                })
+                return;
+            }
 
-            menu
-                .addSeparator()
-                .addItem((item) => {
-                    item.setTitle("RPG Master");
-                    const options = item.setSubmenu();
-
-                    const campaignIndex = pluginSettings.campaign.list.findIndex( c => c.vaultPath == file.path)
+            bootstrapMenu((_, subMenu) => {
+                campaignIndex = pluginSettings.campaign.list.findIndex( c => c.vaultPath == file.path)
 
                     if(campaignIndex>=0) {
-                        options
-                            .addItem(item => {
-                                item.setTitle("Remove Campaign (keeps folder)")
-                                    .onClick(async () => {
-                                        await deleteCampaign(plugin, pluginSettings, campaignIndex);
-                                        new Notice("Campaign removed")
-                                    })
-                            })
-
-                        const campaign = pluginSettings.campaign.list.at(campaignIndex)!;
-                        if(campaign.syncId) return;
-                        options
-                            .addItem(item => {
-                                item.setTitle("Sync with Drive")
-                                    .onClick(async () => {
-                                        menu.close();
-                                        let modalOpen = { value: false }
-
-                                        const modalData = addPwdModal(
-                                            activeDocument.body,
-                                            modalOpen,
-                                            {
-                                                async onReturnPwd(v) {
-                                                    unmount(modalData.pwdModal)
-                                                    if(!v) return;
-                                                    await createCampaignFolder(pluginSettings, campaignIndex, v);
-                                                },
-                                                onCancel() {
-                                                    unmount(modalData.pwdModal)
-                                                },
-                                            }
-                                        )
-                                        modalData.pwModalOpen.value = true;
-                                    })
-
-                            })
+                        addOptionsForCampaign(subMenu)
                     }
                     else {
-                        options.addItem(item => {
-                            item
-                                .setTitle("Set Folder As Campaign")
-                                .onClick(async () => {
-                                    await tagAsCampaign(plugin, pluginSettings, file.path, file.name)
-                                    new Notice("Campaign Folder initialized")
-                                })
-                        })
+                        addOptionsForFolder(subMenu, file)
                     }
-                });
+            })
         })
     )
 }

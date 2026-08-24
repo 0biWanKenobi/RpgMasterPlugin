@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from "svelte";
 	import type { PluginSettings } from "../interfaces";
-
+	import { getIcon } from "obsidian";
 
     type Props = {
         settings: PluginSettings
@@ -18,6 +18,12 @@
 		if (!root || campaigns.length === 0) {
 			return "";
 		}
+
+		const rootSelector = `.nav-folder-title[data-path=${CSS.escape(root)}]`
+		const rootIcon = getIcon("scroll-text");
+		const rootIconUri = rootIcon 
+			? `data:image/svg+xml,${encodeURIComponent(rootIcon.outerHTML)}`
+			: "";
 
 		const selectors = campaigns
 			.filter(
@@ -36,6 +42,27 @@
 		}
 
 		return `
+			${rootSelector} {
+				color: var(--text-accent);
+				border-radius: var(--radius-s);
+				padding: 1px 5px;
+
+				.nav-folder-title-content {
+					font-weight: 600;
+					&:before {
+						content: "";
+						display: inline-block;
+						width: 1em;
+						height: 1em;
+						margin-inline-end: 0.35em;
+						vertical-align: -0.125em;
+
+						background-color: currentColor;
+						-webkit-mask: url("${rootIconUri}") center / contain no-repeat;
+						mask: url("${rootIconUri}") center / contain no-repeat;
+					}
+				}
+			}
 			${selectors} {
 				content: "Campaign";
 				margin-inline-start: 0.5em;

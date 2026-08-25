@@ -36,9 +36,9 @@
     )
     const folderStatusText = $derived(
         folderStatus == 'set'
-            ? 'Character folder selected'
+            ? 'Remote folder selected'
             : folderStatus == 'unset'
-                ? 'Character folder not selected'
+                ? 'Remote folder not selected'
                 : 'Select a folder',
     )
 

@@ -37,6 +37,7 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@journeyapps/wa-sqlite": "^2.0.3",
 		"obsidian": "1.12.3",
 		"rpg_shared": "npm:@0biwankenobi/rpg-shared@^0.0.7"
 	}

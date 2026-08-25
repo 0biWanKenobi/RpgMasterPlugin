@@ -12,7 +12,7 @@ import { addTopViewIcon, RPG_SYNC_CLASS } from './utils/driveSync/syncUI';
 import { configureContextMenu } from './utils/contextMenu/fileTreeActions';
 import { refreshCampaignDecorations } from './utils/contextMenu/fileTreeDecoration';
 import { CampaignRegistry } from './utils/registry/campaignRegistry.svelte';
-
+import SqliteSmokeWorker from "./utils/db/sqlite-smoke.worker?worker&inline";
 
 
 class RPGDungeonMasterPlugin extends Plugin {
@@ -23,6 +23,23 @@ class RPGDungeonMasterPlugin extends Plugin {
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
 		Object.seal(this)
+
+		const worker = new SqliteSmokeWorker();
+		worker.onmessage = (event) => {
+			console.log("SQLite worker response:", event.data);
+		};
+
+		worker.onerror = (event) => {
+			console.error("SQLite worker error:", event);
+		};
+
+		
+
+		this.runDbTest = (token, command) => {
+			worker.postMessage({
+				type: command,
+			});
+		}
 	}
 
 	async onload() {
@@ -47,6 +64,8 @@ class RPGDungeonMasterPlugin extends Plugin {
 		this.#campaignRegistry = CampaignRegistry(this);
 
 	}
+
+	runDbTest: (token: typeof MASTER_PLUGIN, command: string) => void
 
 	getSettings(token: typeof MASTER_PLUGIN) {
 		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")

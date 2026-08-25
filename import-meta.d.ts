@@ -28,3 +28,5 @@ declare module "obsidian" {
 declare global {
 	const RPG_MASTER_PLUGIN_VERSION: string;
 }
+
+

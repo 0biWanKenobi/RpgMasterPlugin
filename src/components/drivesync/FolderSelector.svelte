@@ -225,7 +225,8 @@
         folderNavigation.currentFolderId = folder.id;
 
         pathIndicatorRef?.push(folder)
-        listFolderContents(folder.id)
+        var page = await listFolderContents(folder.id)
+        resetPagination(page);;
     }
 
     const onFolderNavigate = async (folderId: string, folderPath: string) => {
@@ -273,10 +274,12 @@
                 {/if}
 
             </div>
+            {#if !prevPageDisabled || !nextPageDisabled}
             <div class="scroll-buttons">
                 <Button icon="arrow-up" disabled={prevPageDisabled} onClick={onScrollUp}></Button>
                 <Button icon="arrow-down" disabled={nextPageDisabled} onClick={onScrollDown}></Button>
             </div>
+            {/if}
         </div>
 
         <div class="folder-actions">

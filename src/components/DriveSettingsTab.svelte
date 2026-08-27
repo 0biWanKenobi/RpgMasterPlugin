@@ -7,6 +7,7 @@
 	import { HeaderWithIcon, UserPasswordModal } from "rpg_shared/ui/custom";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
 	import { Button } from "rpg_shared/ui/base";
+    import { setDriveAppProperties, isDriveFolderEmpty, getDriveFolderAppProperties } from "rpg_shared/sync/vaultPropertyCrud"; 
 	import FolderSelector from "./drivesync/FolderSelector.svelte";
 	import { MASTER_PLUGIN } from "../utils/capability";
 	import { onMount } from "svelte";
@@ -68,12 +69,64 @@
         }
     }
 
-    async function saveDriveFolderToSettings(folderId: string, folderPath: string) {
+    async function onVaultRemoteFolderSelected(folderId: string, folderPath: string, newFolder: boolean) {
+        if(!newFolder) {
+            const valid = await checkDriveFolderVaultCandidate(folderId)
+            if(!valid) return;
+        }
+
+        await saveVaultRemoteFolderToSettings(folderId, folderPath);
+        if(newFolder) {
+            setVaultIdOnFolder(folderId)
+        }
+    }
+
+    async function checkDriveFolderVaultCandidate(folderId: string){
+        if(!password) {
+            new Notice("Cannot set Drive folder to track this Vault")
+            return;
+        }
+        const token = await _getGoogleAccessToken(password);
+        if(!token) {
+            new Notice("Cannot set Drive folder to track this Vault")
+            return;
+        }
+        const isEmpty = await isDriveFolderEmpty(token, folderId);
+        const metadata = await getDriveFolderAppProperties(token, folderId)
+        const remoteVaultId = metadata.appProperties?.vaultId
+        let valid = true;
+        if(!isEmpty){
+            new Notice("Folder is not empty, cannot be used")
+            valid = false;
+        }
+        if(!!remoteVaultId && remoteVaultId != plugin.app.appId ){
+            new Notice("Folder is synced to another Vault")
+            valid = false;
+        }
+        return valid;
+    }
+
+    async function saveVaultRemoteFolderToSettings(folderId: string, folderPath: string) {
         showEditButton = true;
         folderStatus = 'set';
         settings.gdriveSettings.folderId = folderId;
         settings.gdriveSettings.folderPath = folderPath;
         await plugin.saveSettings(MASTER_PLUGIN);
+    }
+
+    async function setVaultIdOnFolder(folderId: string) {
+        if(!password) {
+            new Notice("Cannot set Drive folder to track this Vault")
+            return;
+        }
+        const token = await _getGoogleAccessToken(password);
+        if(!token) {
+            new Notice("Cannot set Drive folder to track this Vault")
+            return;
+        }
+        await setDriveAppProperties(token, folderId, {
+            vaultId: plugin.app.appId
+        })
     }
 
     let pwdModalOpen = $state(false)
@@ -111,7 +164,7 @@
                 pwdModalOpen = false;
                 return pwd ? _getGoogleAccessToken(pwd) : undefined;
             }}
-            onSelected={saveDriveFolderToSettings}
+            onSelected={onVaultRemoteFolderSelected}
             onCancel={() => {
                 showEditButton = true;
                 folderStatus = settings.gdriveSettings.folderId ? 'set' : 'unset';

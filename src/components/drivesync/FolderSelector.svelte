@@ -8,6 +8,7 @@
 	import { SettingItemGroup, SettingItem, Modal } from "rpg_shared/ui/obsidian";
 	import { createFolder, deleteFolder, renameFolder } from "rpg_shared/sync/googleDriveOperations";
 	import { ConfirmModal } from "rpg_shared/ui/custom";
+	import { getAppContext } from "../../context.svelte";
 
     type Pagination = {
         currentPageIdx: number,
@@ -23,7 +24,7 @@
 
     interface Props {
         getAccessToken: () => Promise<string|undefined>
-        onSelected: (folderId: string, folderPath: string) => void
+        onSelected: (folderId: string, folderPath: string, newlyCreated: boolean) => void
         onCancel: () => void
     }
 
@@ -33,6 +34,8 @@
 
     let load = $state<"inprogress"|"success"|"error">("inprogress")
     let token: string = '';
+    let newlyCreatedFolders: Set<string> = new Set();
+    const {settings} = getAppContext()
     const rootFolderId = settings.gdriveSettings.folderId;
 
     let newFolderModalOpen = $state(false);
@@ -55,6 +58,7 @@
             }
             else{
                 new Notice(`Folder ${deleteFolderState.name} deleted successfully`)
+                newlyCreatedFolders.delete(deleteFolderState.id)
                 reloadContents()
             }
             deleteFolderState.open = false;
@@ -84,6 +88,7 @@
                     }
                     else{
                         new Notice(`Folder ${folderName} created successfully`)
+                        newlyCreatedFolders.add(response.folder.id)
                         reloadContents()
                     }
                     modalOpen.value = false;
@@ -113,15 +118,16 @@
 
     let folderName = $state<string>("");
 
-    onMount(async () => {
-        const res = await getAccessToken();
-        if(!res) {
-            console.warn("Cannot get access token");
-            load = "inprogress";
-            onCancel();
-            return;
-        }
-        loadRootFolder(res);
+    onMount(() => {
+        getAccessToken().then( res => {
+            if(!res) {
+                console.warn("Cannot get access token");
+                load = "inprogress";
+                onCancel();
+            }
+            loadRootFolder(res);  
+        })
+        return (() => newlyCreatedFolders.clear())
     })
 
     async function loadRootFolder(currentToken: string | undefined){
@@ -307,9 +313,13 @@
                 onClick={() => {
                     const selectedPath = pathIndicatorRef?.get();
                     if(!selectedPath) return;
+
+                    var newlyCreated = newlyCreatedFolders.has(folderNavigation.currentFolderId)
+
                     onSelected(
                         folderNavigation.currentFolderId,
                         selectedPath,
+                        newlyCreated
                     )
                 }}
             /><Button

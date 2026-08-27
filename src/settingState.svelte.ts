@@ -1,6 +1,7 @@
 import { PluginSettings } from "./utils/interfaces";
 
 export const DEFAULT_SETTINGS: PluginSettings = {
+	vaultId: undefined,
 	dungeonMaster: {
 		id: '',
 		name: '',

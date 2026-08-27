@@ -24,7 +24,7 @@
 
     interface Props {
         getAccessToken: () => Promise<string|undefined>
-        onSelected: (folderId: string, folderPath: string, newlyCreated: boolean) => void
+        onSelected: (folderId: string, folderPath: string) => void
         onCancel: () => void
     }
 
@@ -34,7 +34,6 @@
 
     let load = $state<"inprogress"|"success"|"error">("inprogress")
     let token: string = '';
-    let newlyCreatedFolders: Set<string> = new Set();
     const {settings} = getAppContext()
     const rootFolderId = settings.gdriveSettings.folderId;
 
@@ -58,7 +57,6 @@
             }
             else{
                 new Notice(`Folder ${deleteFolderState.name} deleted successfully`)
-                newlyCreatedFolders.delete(deleteFolderState.id)
                 reloadContents()
             }
             deleteFolderState.open = false;
@@ -88,7 +86,6 @@
                     }
                     else{
                         new Notice(`Folder ${folderName} created successfully`)
-                        newlyCreatedFolders.add(response.folder.id)
                         reloadContents()
                     }
                     modalOpen.value = false;
@@ -127,7 +124,6 @@
             }
             loadRootFolder(res);  
         })
-        return (() => newlyCreatedFolders.clear())
     })
 
     async function loadRootFolder(currentToken: string | undefined){
@@ -314,12 +310,10 @@
                     const selectedPath = pathIndicatorRef?.get();
                     if(!selectedPath) return;
 
-                    var newlyCreated = newlyCreatedFolders.has(folderNavigation.currentFolderId)
 
                     onSelected(
                         folderNavigation.currentFolderId,
-                        selectedPath,
-                        newlyCreated
+                        selectedPath
                     )
                 }}
             /><Button

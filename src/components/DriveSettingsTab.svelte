@@ -4,13 +4,13 @@
         clearAuthentication
     } from "../utils/googleDriveProtocol";
 	import ConnectionManager from "./drivesync/ConnectionManager.svelte";
-	import { HeaderWithIcon, UserPasswordModal } from "rpg_shared/ui/custom";
+	import { ConfirmModal, HeaderWithIcon, UserPasswordModal } from "rpg_shared/ui/custom";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
 	import { Button } from "rpg_shared/ui/base";
     import { setDriveAppProperties, isDriveFolderEmpty, getDriveFolderAppProperties } from "rpg_shared/sync/vaultPropertyCrud"; 
 	import FolderSelector from "./drivesync/FolderSelector.svelte";
 	import { MASTER_PLUGIN } from "../utils/capability";
-	import { onMount } from "svelte";
+	import { mount, onMount } from "svelte";
 	import { getAppContext } from "../context.svelte";
 	import { getGoogleAccessToken, isGoogleAccessTokenExpired } from "../utils/driveSync/driveSession";
 	import { Notice, Platform } from "obsidian";
@@ -69,41 +69,92 @@
         }
     }
 
-    async function onVaultRemoteFolderSelected(folderId: string, folderPath: string, newFolder: boolean) {
-        if(!newFolder) {
-            const valid = await checkDriveFolderVaultCandidate(folderId)
-            if(!valid) return;
+    let adoptVaultModalOpen = $state(false);
+    let confirmedAsync: PromiseWithResolvers<boolean> |undefined = undefined;
+
+    async function onVaultRemoteFolderSelected(folderId: string, folderPath: string) {
+        const {valid, remoteVaultId, couldAdopt} = await checkDriveFolderVaultCandidate(folderId)
+        if(!valid) {
+            if(!couldAdopt)
+                return
+            // ask user's confirmation that we can set the selected folder id as our vault id.
+            confirmedAsync = Promise.withResolvers<boolean>();
+            adoptVaultModalOpen = true;
+            const confirmed = await confirmedAsync.promise;
+            confirmedAsync = undefined;
+
+            if(!confirmed) return;
+
+            settings.vaultId = remoteVaultId
+            await plugin.saveSettings(MASTER_PLUGIN);
+        }
+        if(!remoteVaultId){
+            const localVaultIdInitialized = !!settings.vaultId;
+            const vaultId = localVaultIdInitialized ? settings.vaultId! : window.crypto.randomUUID();
+            const success = await setVaultIdOnFolder(folderId, vaultId)
+            if(!success)
+                return
+            
+            if(!localVaultIdInitialized) {
+                settings.vaultId = vaultId;
+                await plugin.saveSettings(MASTER_PLUGIN);
+            }
         }
 
         await saveVaultRemoteFolderToSettings(folderId, folderPath);
-        if(newFolder) {
-            setVaultIdOnFolder(folderId)
-        }
     }
 
-    async function checkDriveFolderVaultCandidate(folderId: string){
+    /**
+     * Check if selected Drive folder is a valid choice to store vault data into.
+     * @param folderId
+     */
+    async function checkDriveFolderVaultCandidate(folderId: string): Promise<{valid: boolean, remoteVaultId?: string, couldAdopt?: boolean}>{
         if(!password) {
             new Notice("Cannot set Drive folder to track this Vault")
-            return;
+            return {
+                valid: false,
+            };;
         }
         const token = await _getGoogleAccessToken(password);
         if(!token) {
             new Notice("Cannot set Drive folder to track this Vault")
-            return;
+            return {
+                valid: false,
+            };
         }
-        const isEmpty = await isDriveFolderEmpty(token, folderId);
+        
         const metadata = await getDriveFolderAppProperties(token, folderId)
         const remoteVaultId = metadata.appProperties?.vaultId
-        let valid = true;
-        if(!isEmpty){
-            new Notice("Folder is not empty, cannot be used")
-            valid = false;
+        
+
+        if(settings.vaultId) {
+            if(remoteVaultId) {
+                if(settings.vaultId == remoteVaultId) return { valid: true, remoteVaultId} // found our remote vault counterpart
+                new Notice("Synced to a different Vault, cannot be used")
+                return {valid: false, remoteVaultId} // ours and remote are 2 different vaults
+            }
+
+            else {
+                const isEmpty = await isDriveFolderEmpty(token, folderId);
+                if(isEmpty) return { valid: true, remoteVaultId} // we have our vault locally, start using remote as vault
+                new Notice("Folder is not empty, cannot be used")
+                return {valid: false, remoteVaultId} // remote is a regular Drive folder already used, cannot adopt
+            }
         }
-        if(!!remoteVaultId && remoteVaultId != plugin.app.appId ){
-            new Notice("Folder is synced to another Vault")
-            valid = false;
+
+        else {
+            if(remoteVaultId){
+                return {valid: false, remoteVaultId, couldAdopt: true} // We cannot know whose vault this is, user confirmation is required.
+            }
+            
+            else {
+                const isEmpty = await isDriveFolderEmpty(token, folderId);
+                if(isEmpty) return { valid: true, remoteVaultId} // we don't have an id ourselves, and the remote is empty, so ok
+
+                new Notice("Folder is not empty, cannot be used")
+                return {valid: false, remoteVaultId} // remote is a regular Drive folder already used, cannot adopt
+            }
         }
-        return valid;
     }
 
     async function saveVaultRemoteFolderToSettings(folderId: string, folderPath: string) {
@@ -114,19 +165,26 @@
         await plugin.saveSettings(MASTER_PLUGIN);
     }
 
-    async function setVaultIdOnFolder(folderId: string) {
+    async function setVaultIdOnFolder(folderId: string, vaultId: string) {
         if(!password) {
             new Notice("Cannot set Drive folder to track this Vault")
-            return;
+            return false;
         }
         const token = await _getGoogleAccessToken(password);
         if(!token) {
             new Notice("Cannot set Drive folder to track this Vault")
-            return;
+            return false;
         }
-        await setDriveAppProperties(token, folderId, {
-            vaultId: plugin.app.appId
+        const {success, errorMessage} = await setDriveAppProperties(token, folderId, {
+            vaultId: vaultId
         })
+
+        if(!success) {
+            new Notice(errorMessage)
+            return false;
+        }
+
+        return true;
     }
 
     let pwdModalOpen = $state(false)
@@ -187,6 +245,16 @@
         pwdAsync = Promise.withResolvers<string|undefined>();
     }}
 />
+
+<ConfirmModal
+    title="Folder is an active Vault"
+    bind:open={adoptVaultModalOpen}
+    onClose= {(yesNo) => {
+        confirmedAsync?.resolve(yesNo)
+    }}
+>
+    Select it only if you're sure that you own it. Confirm?
+</ConfirmModal>
 
 <style>
     :global(.folder-setting){

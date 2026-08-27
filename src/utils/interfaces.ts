@@ -46,6 +46,7 @@ export interface GDriveSettings {
 
 
 export interface PluginSettings {
+	vaultId?: string,
 	dungeonMaster: DungeonMasterSettings;
 	campaign: CampaignSettings
 	gdriveSettings: GDriveSettings;

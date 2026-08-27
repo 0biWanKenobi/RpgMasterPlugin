@@ -33,6 +33,7 @@
 
     let load = $state<"inprogress"|"success"|"error">("inprogress")
     let token: string = '';
+    const rootFolderId = settings.gdriveSettings.folderId;
 
     let newFolderModalOpen = $state(false);
     const renameFolderState = $state({
@@ -259,6 +260,7 @@
                             text={folder.name}
                             onClick={() => onFolderSelected(folder)}
                             canEdit={folder.capabilities.canEdit}
+                            canSelect={folder.id != rootFolderId}
                             onEditFolder={() => {
                                 renameFolderState.id = folder.id
                                 renameFolderState.open = true

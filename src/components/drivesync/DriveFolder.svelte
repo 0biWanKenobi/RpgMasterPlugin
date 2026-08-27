@@ -3,6 +3,7 @@
 
     interface Props {
       text: string
+      canSelect: boolean
       canEdit: boolean
       canDelete: boolean
       onEditFolder?: () => void
@@ -10,7 +11,7 @@
       onClick?: () => void
     }
 
-    let {text, onClick, canEdit, canDelete, onEditFolder, onDeleteFolder}: Props = $props();
+    let {text, onClick, canEdit, canSelect, canDelete, onEditFolder, onDeleteFolder}: Props = $props();
 
     const handleEdit = (event: MouseEvent) => {
         event.stopPropagation();
@@ -25,20 +26,33 @@
 </script>
 
 
-<Button size={14} class="folder-list-item nav-file-title" icon="folder" {onClick}>
+<Button size={14} class="folder-list-item nav-file-title" icon="folder" {onClick} disabled={!canSelect}>
     <span class="folder-list-name nav-dile-title-content">{text}</span>
     <span class="actions">
-      {#if canEdit}
-          <Button class="folder-button" tooltip="Rename" icon="pencil" onClick={handleEdit}/>
-          {/if}
-      {#if canDelete}
-          <Button warning class="folder-button" tooltip="Delete" icon="folder-x" onClick={handleDelete}/>
+     {#if !canSelect}
+      <code class="mono">Current Vault Folder</code>
+     {:else}
+        {#if canEdit}
+            <Button class="folder-button" tooltip="Rename" icon="pencil" onClick={handleEdit}/>
+            {/if}
+        {#if canDelete}
+            <Button warning class="folder-button" tooltip="Delete" icon="folder-x" onClick={handleDelete}/>
+        {/if}
       {/if}
     </span>
 </Button>   
 
 
 <style>
+
+.mono {
+    text-transform: uppercase;
+    font-size: 0.6rem;
+    background-color: var(--background-modifier-hover);
+    color: var(--text-color);
+    padding: 4px;
+    border-radius: var(--radius-s);
+}
 
 :global(.folder-list-item) {
     display: flex;

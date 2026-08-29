@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { UserPasswordModal } from "rpg_shared/ui/custom";
+    import { Notice, UserPasswordModal } from "rpg_shared/ui/custom";
     import { type GoogleDriveTokenSet } from "rpg_shared/sync/googleDriveAuth";
     import { GoogleDriveConnectModal } from "rpg_shared/ui/custom";
     import { saveDriveTokens } from "../../utils/driveSync/driveSession";
@@ -12,7 +12,6 @@
         decryptGoogleDrivePayload,
 		type GoogleDriveSetupContext
     } from "../../utils/googleDriveProtocol";
-	import { Notice } from "obsidian";
 	import { HeaderWithIcon } from "rpg_shared/ui/custom";
 	import { Button } from "rpg_shared/ui/base";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
@@ -138,7 +137,7 @@
         loginInProgress = false;
         if (!configuration.setup_id || !configuration.payload) {
             tokenSetup = "error";
-            new Notice("Google token payload missing from callback.")
+            Notice.Error("Google token payload missing from callback.")
             return;
         }
 
@@ -146,7 +145,7 @@
         password = await getUserPassword();
 
         if (!password) { //TODO: check length and complexity
-            new Notice("No password set");
+            Notice.Warning("No password set");
             tokenSetup = "error"
             return;
         }
@@ -170,7 +169,7 @@
         } 
         catch (error) {
             tokenSetup = "error";
-            new Notice(
+            Notice.Error(
                 error instanceof Error
                     ? `Google token decryption failed: ${error.message}`
                     : "Google token decryption failed.",

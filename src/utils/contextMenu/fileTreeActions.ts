@@ -1,4 +1,4 @@
-import { Menu, type MenuItem, Notice, TFolder } from "obsidian";
+import { Menu, type MenuItem, TFolder } from "obsidian";
 import type RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { MASTER_PLUGIN } from "../capability";
 import type { CampaignConfig, PluginSettings } from "../interfaces";
@@ -9,6 +9,7 @@ import { mount, unmount } from "svelte";
 import OutsideVaultInfo from "./outsideVaultInfo.svelte";
 import { Toggle } from "rpg_shared/ui/base";
 import { hasParentCampaign } from "./utils";
+import { Notice } from "rpg_shared/ui/custom";
 
 async function tagAsCampaign(
     plugin: RPGDungeonMasterPlugin,
@@ -61,13 +62,13 @@ export async function configureContextMenu(plugin: RPGDungeonMasterPlugin) {
             plugin
         )
         if(!tk.success){
-            new Notice("Authentication failed") 
+            Notice.Warning("Authentication failed") 
             return;
         }
 
         const rootFolder = pluginSettings.gdriveSettings.folderId
         if(!rootFolder) {
-            new Notice("Configure Drive folder in Settings!")
+            Notice.Warning("Configure Drive folder in Settings!")
             return;
         }
         const campaign = pluginSettings.campaign.list[campaignIndex];

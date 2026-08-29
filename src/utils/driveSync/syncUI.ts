@@ -1,8 +1,9 @@
-import { MarkdownView, Menu, Notice, setIcon, setTooltip, TFile } from "obsidian";
+import { MarkdownView, Menu, setIcon, setTooltip, TFile } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { unmount } from "svelte";
 import { syncFile } from "./sync";
 import { addPwdModal } from "../pwdModal";
+import { Notice } from "rpg_shared/ui/custom";
 
 export const RPG_SYNC_CLASS = 'rpg-master-sync'
 
@@ -55,7 +56,7 @@ export async function addTopViewIcon(view: MarkdownView, plugin: RPGDungeonMaste
                         new Notice("Note uploaded")
                     }
                     if(!r.success){
-                        new Notice(r.errorMessage)
+                        Notice.Error(r.errorMessage)
                     }
                 })
             },

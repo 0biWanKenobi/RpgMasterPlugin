@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { Notice } from "obsidian";
 	import { type GoogleDriveFolderEntry, listFoldersIn } from "../../utils/googleDriveProtocol";
 	import FolderPathIndicator, { type Folder } from "./FolderPathIndicator.svelte";
 	import { Button } from "rpg_shared/ui/base";
@@ -7,7 +6,7 @@
 	import { onMount } from "svelte";
 	import { SettingItemGroup, SettingItem, Modal } from "rpg_shared/ui/obsidian";
 	import { createFolder, deleteFolder, renameFolder } from "rpg_shared/sync/googleDriveOperations";
-	import { ConfirmModal } from "rpg_shared/ui/custom";
+	import { ConfirmModal, Notice } from "rpg_shared/ui/custom";
 	import { getAppContext } from "../../context.svelte";
 
     type Pagination = {
@@ -53,7 +52,7 @@
             const response = await deleteFolder(token, deleteFolderState.id);
             if(!response.success) {
                 console.error(response.error);
-                new Notice(response.errorMessage)
+                Notice.Error(response.errorMessage)
             }
             else{
                 new Notice(`Folder ${deleteFolderState.name} deleted successfully`)
@@ -82,7 +81,7 @@
                     const response = await createFolder(token, folderName, {parentFolderId: folderNavigation.currentFolderId});
                     if(!response.success) {
                         console.error(response.error);
-                        new Notice(response.errorMessage)
+                        Notice.Error(response.errorMessage)
                     }
                     else{
                         new Notice(`Folder ${folderName} created successfully`)
@@ -102,7 +101,7 @@
                     const response = await renameFolder(token, renameFolderState.id, folderName);
                     if(!response.success) {
                         console.error(response.error);
-                        new Notice(response.errorMessage)
+                        Notice.Error(response.errorMessage)
                     }
                     else{
                         new Notice('Folder renamed successfully')
@@ -128,7 +127,7 @@
 
     async function loadRootFolder(currentToken: string | undefined){
         if(!currentToken) {
-            new Notice("Login error");
+            Notice.Warning("Login error");
             load = "error";
             onCancel();
             return;
@@ -199,7 +198,7 @@
         const targetPageNr = pagination.currentPageIdx - 1;
         const page = pagination.pages.at(targetPageNr);
         if(!page) {
-            new Notice("Error loading folders")
+            Notice.Error("Error loading folders")
             return;
         }
 

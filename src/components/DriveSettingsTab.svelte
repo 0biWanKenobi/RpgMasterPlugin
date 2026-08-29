@@ -4,16 +4,16 @@
         clearAuthentication
     } from "../utils/googleDriveProtocol";
 	import ConnectionManager from "./drivesync/ConnectionManager.svelte";
-	import { ConfirmModal, HeaderWithIcon, UserPasswordModal } from "rpg_shared/ui/custom";
+	import { ConfirmModal, HeaderWithIcon, UserPasswordModal, Notice } from "rpg_shared/ui/custom";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
 	import { Button } from "rpg_shared/ui/base";
     import { setDriveAppProperties, isDriveFolderEmpty, getDriveFolderAppProperties } from "rpg_shared/sync/vaultPropertyCrud"; 
 	import FolderSelector from "./drivesync/FolderSelector.svelte";
 	import { MASTER_PLUGIN } from "../utils/capability";
-	import { mount, onMount } from "svelte";
+	import { onMount } from "svelte";
 	import { getAppContext } from "../context.svelte";
 	import { getGoogleAccessToken, isGoogleAccessTokenExpired } from "../utils/driveSync/driveSession";
-	import { Notice, Platform } from "obsidian";
+	import { Platform } from "obsidian";
 
     const { plugin, settings } = getAppContext()
 
@@ -56,7 +56,7 @@
         if(result.success)
             return result.accessToken;
 
-        new Notice(result.error);
+        Notice.Error(result.error);
 
         switch (result.reason) {
             case "invalid_password":
@@ -110,14 +110,14 @@
      */
     async function checkDriveFolderVaultCandidate(folderId: string): Promise<{valid: boolean, remoteVaultId?: string, couldAdopt?: boolean}>{
         if(!password) {
-            new Notice("Cannot set Drive folder to track this Vault")
+            Notice.Error("Cannot set Drive folder to track this Vault")
             return {
                 valid: false,
             };;
         }
         const token = await _getGoogleAccessToken(password);
         if(!token) {
-            new Notice("Cannot set Drive folder to track this Vault")
+            Notice.Error("Cannot set Drive folder to track this Vault")
             return {
                 valid: false,
             };
@@ -130,14 +130,14 @@
         if(settings.vaultId) {
             if(remoteVaultId) {
                 if(settings.vaultId == remoteVaultId) return { valid: true, remoteVaultId} // found our remote vault counterpart
-                new Notice("Synced to a different Vault, cannot be used")
+                Notice.Warning("Synced to a different Vault, cannot be used")
                 return {valid: false, remoteVaultId} // ours and remote are 2 different vaults
             }
 
             else {
                 const isEmpty = await isDriveFolderEmpty(token, folderId);
                 if(isEmpty) return { valid: true, remoteVaultId} // we have our vault locally, start using remote as vault
-                new Notice("Folder is not empty, cannot be used")
+                Notice.Warning("Folder is not empty, cannot be used")
                 return {valid: false, remoteVaultId} // remote is a regular Drive folder already used, cannot adopt
             }
         }
@@ -151,7 +151,7 @@
                 const isEmpty = await isDriveFolderEmpty(token, folderId);
                 if(isEmpty) return { valid: true, remoteVaultId} // we don't have an id ourselves, and the remote is empty, so ok
 
-                new Notice("Folder is not empty, cannot be used")
+                Notice.Warning("Folder is not empty, cannot be used")
                 return {valid: false, remoteVaultId} // remote is a regular Drive folder already used, cannot adopt
             }
         }
@@ -167,12 +167,12 @@
 
     async function setVaultIdOnFolder(folderId: string, vaultId: string) {
         if(!password) {
-            new Notice("Cannot set Drive folder to track this Vault")
+            Notice.Warning("Cannot set Drive folder to track this Vault")
             return false;
         }
         const token = await _getGoogleAccessToken(password);
         if(!token) {
-            new Notice("Cannot set Drive folder to track this Vault")
+            Notice.Warning("Cannot set Drive folder to track this Vault")
             return false;
         }
         const {success, errorMessage} = await setDriveAppProperties(token, folderId, {

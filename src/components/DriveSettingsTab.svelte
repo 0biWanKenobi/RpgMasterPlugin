@@ -113,7 +113,7 @@
             Notice.Error("Cannot set Drive folder to track this Vault")
             return {
                 valid: false,
-            };;
+            };
         }
         const token = await _getGoogleAccessToken(password);
         if(!token) {
@@ -123,8 +123,15 @@
             };
         }
         
-        const metadata = await getDriveFolderAppProperties(token, folderId)
-        const remoteVaultId = metadata.appProperties?.vaultId
+        const {success, error, errorMessage, data} = await getDriveFolderAppProperties(token, folderId)
+        const remoteVaultId = success ?  data.appProperties?.vaultId : undefined
+        if(!success) {
+            console.error(error);
+            Notice.Error(errorMessage);
+            return {
+                valid: false,
+            }
+        }
         
 
         if(settings.vaultId) {
@@ -135,7 +142,12 @@
             }
 
             else {
-                const isEmpty = await isDriveFolderEmpty(token, folderId);
+                const {success, isEmpty, error, errorMessage} = await isDriveFolderEmpty(token, folderId);
+                if(!success) {
+                    console.error(error);
+                    Notice.Error(errorMessage);
+                    return {valid: false, remoteVaultId: undefined}
+                }
                 if(isEmpty) return { valid: true, remoteVaultId} // we have our vault locally, start using remote as vault
                 Notice.Warning("Folder is not empty, cannot be used")
                 return {valid: false, remoteVaultId} // remote is a regular Drive folder already used, cannot adopt
@@ -148,7 +160,12 @@
             }
             
             else {
-                const isEmpty = await isDriveFolderEmpty(token, folderId);
+                const {success, isEmpty, error, errorMessage} = await isDriveFolderEmpty(token, folderId);
+                if(!success) {
+                    console.error(error);
+                    Notice.Error(errorMessage);
+                    return {valid: false, remoteVaultId: undefined}
+                }
                 if(isEmpty) return { valid: true, remoteVaultId} // we don't have an id ourselves, and the remote is empty, so ok
 
                 Notice.Warning("Folder is not empty, cannot be used")
@@ -175,12 +192,13 @@
             Notice.Warning("Cannot set Drive folder to track this Vault")
             return false;
         }
-        const {success, errorMessage} = await setDriveAppProperties(token, folderId, {
+        const {success, error, errorMessage} = await setDriveAppProperties(token, folderId, {
             vaultId: vaultId
         })
 
         if(!success) {
-            new Notice(errorMessage)
+            console.error(error)
+            Notice.Error(errorMessage)
             return false;
         }
 

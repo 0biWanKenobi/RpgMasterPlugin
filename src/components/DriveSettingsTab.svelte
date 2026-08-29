@@ -7,7 +7,7 @@
 	import { ConfirmModal, HeaderWithIcon, UserPasswordModal, Notice } from "rpg_shared/ui/custom";
 	import { SettingItem } from "rpg_shared/ui/obsidian";
 	import { Button } from "rpg_shared/ui/base";
-    import { setDriveAppProperties, isDriveFolderEmpty, getDriveFolderAppProperties } from "rpg_shared/sync/vaultPropertyCrud"; 
+    import { setDriveAppProperties, isDriveFolderEmpty, getDriveFolderAppProperties, removeDriveAppProperty } from "rpg_shared/sync/vaultPropertyCrud"; 
 	import FolderSelector from "./drivesync/FolderSelector.svelte";
 	import { MASTER_PLUGIN } from "../utils/capability";
 	import { onMount } from "svelte";
@@ -84,8 +84,20 @@
             return
         }
 
+        const removeOldVaultId = async(folderId: string) => {
+                const {success: vaultIdRemoved, error, errorMessage} = await removeDriveAppProperty(
+                    token, folderId, "vaultId"
+                )
+                if(!vaultIdRemoved) {
+                    console.error(error)
+                    Notice.Error(errorMessage)
+                    return false;
+                }
+            return true;
+        }
 
-        const {valid, remoteVaultId, couldAdopt} = await checkDriveFolderVaultCandidate(folderId, token)
+        const {valid, remoteVaultId, couldAdopt, needsMigration} = await checkDriveFolderVaultCandidate(folderId, token)
+        let newVaultId: string | undefined;
         if(!valid) {
             if(!couldAdopt)
                 return
@@ -96,46 +108,62 @@
             confirmedAsync = undefined;
 
             if(!confirmed) return;
-
-            settings.vaultId = remoteVaultId
-            await plugin.saveSettings(MASTER_PLUGIN);
+            newVaultId = remoteVaultId
         }
         if(!remoteVaultId){
             const localVaultIdInitialized = !!settings.vaultId;
             const vaultId = localVaultIdInitialized ? settings.vaultId! : window.crypto.randomUUID();
-            const success = await setVaultIdOnFolder(folderId, vaultId, token)
-            if(!success)
+            const vaultIdSet = await setVaultIdOnFolder(folderId, vaultId, token)
+            if(!vaultIdSet)
                 return
-            
+
             if(!localVaultIdInitialized) {
-                settings.vaultId = vaultId;
-                await plugin.saveSettings(MASTER_PLUGIN);
+                newVaultId = vaultId;
             }
         }
+        
+        const oldRootFolderId = settings.gdriveSettings.folderId;
+        await saveVaultRemoteFolderToSettings({folderId, folderPath, vaultId: newVaultId ?? settings.vaultId});
 
-        await saveVaultRemoteFolderToSettings(folderId, folderPath);
+        if(needsMigration) {
+            // TODO(sync): eventually migrate/reconcile old contents here.
+            const oldIdRemoved = await removeOldVaultId(oldRootFolderId);
+            // New root is canonical locally; old root remains additionally
+            // marked and can be cleaned up/retried.
+            if(!oldIdRemoved) return;
+        }
     }
 
+    type VaultCandidateResponse = {
+        valid: boolean,
+        remoteVaultId?: string,
+        couldAdopt?: boolean,
+        needsMigration?: boolean
+    }
     /**
      * Check if selected Drive folder is a valid choice to store vault data into.
      * @param folderId
      */
-    async function checkDriveFolderVaultCandidate(folderId: string, token: string): Promise<{valid: boolean, remoteVaultId?: string, couldAdopt?: boolean}>{
+    async function checkDriveFolderVaultCandidate(folderId: string, token: string): Promise<VaultCandidateResponse>{
         
         const {success, error, errorMessage, data} = await getDriveFolderAppProperties(token, folderId)
         const remoteVaultId = success ?  data.appProperties?.vaultId : undefined
+
         if(!success) {
             console.error(error);
             Notice.Error(errorMessage);
             return {
                 valid: false,
             }
-        }
-        
+        }        
+
+        const needsMigration = !!settings.gdriveSettings.folderId && settings.gdriveSettings.folderId !== folderId;
+
 
         if(settings.vaultId) {
             if(remoteVaultId) {
-                if(settings.vaultId == remoteVaultId) return { valid: true, remoteVaultId} // found our remote vault counterpart
+                // found our remote vault counterpart. Might still have it set to a different folder locally, so return needsMigration.
+                if(settings.vaultId == remoteVaultId) return { valid: true, remoteVaultId, needsMigration } 
                 Notice.Warning("Synced to a different Vault, cannot be used")
                 return {valid: false, remoteVaultId} // ours and remote are 2 different vaults
             }
@@ -147,7 +175,9 @@
                     Notice.Error(errorMessage);
                     return {valid: false, remoteVaultId: undefined}
                 }
-                if(isEmpty) return { valid: true, remoteVaultId} // we have our vault locally, start using remote as vault
+                // we have our vault locally, start using remote as vault. Not sure when this could happen, because after selecting
+                // a folder to be Vault, we mark it
+                if(isEmpty) return { valid: true, remoteVaultId, needsMigration } 
                 Notice.Warning("Folder is not empty, cannot be used")
                 return {valid: false, remoteVaultId} // remote is a regular Drive folder already used, cannot adopt
             }
@@ -155,7 +185,7 @@
 
         else {
             if(remoteVaultId){
-                return {valid: false, remoteVaultId, couldAdopt: true} // We cannot know whose vault this is, user confirmation is required.
+                return {valid: false, remoteVaultId, couldAdopt: true, needsMigration} // We cannot know whose vault this is, user confirmation is required.
             }
             
             else {
@@ -165,7 +195,7 @@
                     Notice.Error(errorMessage);
                     return {valid: false, remoteVaultId: undefined}
                 }
-                if(isEmpty) return { valid: true, remoteVaultId} // we don't have an id ourselves, and the remote is empty, so ok
+                if(isEmpty) return { valid: true, remoteVaultId, needsMigration } // we don't have an id ourselves, and the remote is empty, so ok
 
                 Notice.Warning("Folder is not empty, cannot be used")
                 return {valid: false, remoteVaultId} // remote is a regular Drive folder already used, cannot adopt
@@ -173,9 +203,15 @@
         }
     }
 
-    async function saveVaultRemoteFolderToSettings(folderId: string, folderPath: string) {
+    type SaveVaultSettingsParams = {
+        folderId: string,
+        folderPath: string,
+        vaultId?: string
+    }
+    async function saveVaultRemoteFolderToSettings({ folderId, folderPath, vaultId }: SaveVaultSettingsParams) {
         showEditButton = true;
         folderStatus = 'set';
+        settings.vaultId = vaultId;
         settings.gdriveSettings.folderId = folderId;
         settings.gdriveSettings.folderPath = folderPath;
         await plugin.saveSettings(MASTER_PLUGIN);

@@ -73,7 +73,19 @@
     let confirmedAsync: PromiseWithResolvers<boolean> |undefined = undefined;
 
     async function onVaultRemoteFolderSelected(folderId: string, folderPath: string) {
-        const {valid, remoteVaultId, couldAdopt} = await checkDriveFolderVaultCandidate(folderId)
+
+        if(!password) {
+            Notice.Error("Cannot set Drive folder to track this Vault")
+            return
+        }
+        const token = await _getGoogleAccessToken(password);
+        if(!token) {
+            Notice.Error("Cannot set Drive folder to track this Vault")
+            return
+        }
+
+
+        const {valid, remoteVaultId, couldAdopt} = await checkDriveFolderVaultCandidate(folderId, token)
         if(!valid) {
             if(!couldAdopt)
                 return
@@ -91,7 +103,7 @@
         if(!remoteVaultId){
             const localVaultIdInitialized = !!settings.vaultId;
             const vaultId = localVaultIdInitialized ? settings.vaultId! : window.crypto.randomUUID();
-            const success = await setVaultIdOnFolder(folderId, vaultId)
+            const success = await setVaultIdOnFolder(folderId, vaultId, token)
             if(!success)
                 return
             
@@ -108,20 +120,7 @@
      * Check if selected Drive folder is a valid choice to store vault data into.
      * @param folderId
      */
-    async function checkDriveFolderVaultCandidate(folderId: string): Promise<{valid: boolean, remoteVaultId?: string, couldAdopt?: boolean}>{
-        if(!password) {
-            Notice.Error("Cannot set Drive folder to track this Vault")
-            return {
-                valid: false,
-            };
-        }
-        const token = await _getGoogleAccessToken(password);
-        if(!token) {
-            Notice.Error("Cannot set Drive folder to track this Vault")
-            return {
-                valid: false,
-            };
-        }
+    async function checkDriveFolderVaultCandidate(folderId: string, token: string): Promise<{valid: boolean, remoteVaultId?: string, couldAdopt?: boolean}>{
         
         const {success, error, errorMessage, data} = await getDriveFolderAppProperties(token, folderId)
         const remoteVaultId = success ?  data.appProperties?.vaultId : undefined
@@ -182,16 +181,7 @@
         await plugin.saveSettings(MASTER_PLUGIN);
     }
 
-    async function setVaultIdOnFolder(folderId: string, vaultId: string) {
-        if(!password) {
-            Notice.Warning("Cannot set Drive folder to track this Vault")
-            return false;
-        }
-        const token = await _getGoogleAccessToken(password);
-        if(!token) {
-            Notice.Warning("Cannot set Drive folder to track this Vault")
-            return false;
-        }
+    async function setVaultIdOnFolder(folderId: string, vaultId: string, token: string) {
         const {success, error, errorMessage} = await setDriveAppProperties(token, folderId, {
             vaultId: vaultId
         })

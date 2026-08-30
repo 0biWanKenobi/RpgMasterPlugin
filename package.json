@@ -9,6 +9,7 @@
 		"build": "svelte-check --tsconfig ./tsconfig.json && vite build",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"start_test_server": "vite test --host 127.0.0.1 --port 5173 --strictPort --open",
+		"collect:hash": "node src/playwright/collect_hash_logs.mjs",
 		"lint": "eslint .",
 		"yalc:add:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} link @0biwankenobi/rpg-shared && rm -rf node_modules/rpg_shared && ln -sfnT @0biwankenobi/rpg-shared node_modules/rpg_shared",
 		"yalc:update:shared": "${YALC_BIN:-$HOME/.local/bin/yalc} update @0biwankenobi/rpg-shared",

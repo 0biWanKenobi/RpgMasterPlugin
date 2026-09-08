@@ -1,4 +1,4 @@
-import type { App, ObsidianProtocolHandler, PluginManifest } from 'obsidian';
+import type { App, ObsidianProtocolHandler, PluginManifest, TAbstractFile } from 'obsidian';
 import { MarkdownView, Platform, Plugin } from 'obsidian';
 import { SettingTab } from './settingsTab';
 import './styles.css'
@@ -13,6 +13,9 @@ import { configureContextMenu } from './utils/contextMenu/fileTreeActions';
 import { refreshCampaignDecorations } from './utils/contextMenu/fileTreeDecoration';
 import { CampaignRegistry } from './utils/registry/campaignRegistry.svelte';
 import SqliteSmokeWorker from "./utils/db/sqlite-smoke.worker?worker&inline";
+import { syncEngine } from  "rpg_shared/sync/engine";
+import { VaultEvent } from 'rpg_shared/sync/engine/types';
+
 
 
 class RPGDungeonMasterPlugin extends Plugin {
@@ -142,7 +145,46 @@ class RPGDungeonMasterPlugin extends Plugin {
 		if (token !== MASTER_PLUGIN) throw new Error("Unauthorized")
 		return this.#campaignRegistry
 	}
+
+	#registerSyncEngineEvents(){
+
+		const onStart = () => {
+			console.log("Sync started");
+		};
+		
+		const onProgress = (progress: number) => {
+			console.log(`Sync progress: ${progress * 100}%`);
+		};
+
+		const onComplete = () => {
+			console.log("Sync completed");
+		}
+
+		const onError = (error: Error) => {
+			console.error("Sync error:", error);
+		}
+
+		const requestSync = (
+			file: TAbstractFile,
+			event: VaultEvent,
+			oldPath?: string
+		) => {
+			syncEngine.queueForSync(file, event, oldPath);
+			syncEngine.requestSync(
+				onStart,
+				onProgress,
+				onComplete,
+				onError
+			)
+		}
+
+		this.app.vault.on("create", (file) => requestSync(file, "create"));
+		this.app.vault.on("modify", (file) => requestSync(file, "modify"));
+		this.app.vault.on("delete", (file) => requestSync(file, "delete"));
+		this.app.vault.on("rename", (file, oldPath) => requestSync(file, "rename", oldPath));
+	}
 }
+
 
 Object.freeze(RPGDungeonMasterPlugin.prototype);
 

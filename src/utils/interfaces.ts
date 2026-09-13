@@ -1,6 +1,6 @@
 //TODO: move code shared with player plugin to common package
 
-import { SyncState } from "./driveSync/types";
+import type { SyncState } from "./driveSync/types";
 
 export interface DungeonMasterSettings {
 	id: string;

@@ -1,5 +1,5 @@
 import { UserPasswordModal } from "rpg_shared/ui/custom";
-import { Component, ComponentProps, mount } from "svelte";
+import { type Component, type ComponentProps, mount } from "svelte";
 import { createState } from "../helpers.svelte";
 
 type PwdModalState = {value: boolean}

@@ -6,7 +6,7 @@ import { OPFSCoopSyncVFS }
 import { stressCheck, stressTest } from "./stress-test";
 import { crashCheck, crashPrepare } from "./crash-test";
 import { commitCrashCheck, commitCrashPrepare } from "./transaction-crash-test"
-import { WorkerRequest } from "./types";
+import type { WorkerRequest } from "./types";
 
 const DB_NAME = "rpg-wa-sqlite-test.db";
 const VFS_NAME = "rpg-opfs";

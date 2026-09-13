@@ -1,4 +1,4 @@
-import { PluginSettings } from "./utils/interfaces";
+import type { PluginSettings } from "./utils/interfaces";
 
 export const DEFAULT_SETTINGS: PluginSettings = {
 	vaultId: undefined,

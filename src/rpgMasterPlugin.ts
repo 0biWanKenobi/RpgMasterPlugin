@@ -7,14 +7,14 @@ import { createSettingsState, DEFAULT_SETTINGS, snapshotSettings } from './setti
 import { type PluginSettings } from './utils/interfaces';
 import { mount, unmount } from 'svelte';
 import { setAppContext } from './context.svelte';
-import SyncStatusBarIcon, { SyncStatusBarIconProps } from './components/drivesync/SyncStatusBarIcon.svelte';
+import SyncStatusBarIcon, { type SyncStatusBarIconProps } from './components/drivesync/SyncStatusBarIcon.svelte';
 import { addTopViewIcon, RPG_SYNC_CLASS } from './utils/driveSync/syncUI';
 import { configureContextMenu } from './utils/contextMenu/fileTreeActions';
 import { refreshCampaignDecorations } from './utils/contextMenu/fileTreeDecoration';
 import { CampaignRegistry } from './utils/registry/campaignRegistry.svelte';
 import SqliteSmokeWorker from "./utils/db/sqlite-smoke.worker?worker&inline";
 import { syncEngine } from  "rpg_shared/sync/engine";
-import { VaultEvent } from 'rpg_shared/sync/engine/types';
+import type { VaultEvent } from 'rpg_shared/sync/engine/types';
 
 
 

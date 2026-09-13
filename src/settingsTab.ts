@@ -1,5 +1,5 @@
 import { App, PluginSettingTab } from "obsidian";
-import { Component, ComponentProps, mount, unmount } from "svelte";
+import { type Component, type ComponentProps, mount, unmount } from "svelte";
 import type RPGDungeonMasterPlugin from "./rpgMasterPlugin";
 import { MASTER_PLUGIN } from "./utils/capability";
 import AppComponent from "./components/main.svelte";

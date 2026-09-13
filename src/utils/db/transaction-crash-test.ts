@@ -1,4 +1,4 @@
-import { OpenDbConnectionFn } from "./types";
+import type { OpenDbConnectionFn } from "./types";
 
 export async function commitCrashPrepare(openDatabase: OpenDbConnectionFn) {
     const { sqlite, db } = await openDatabase();

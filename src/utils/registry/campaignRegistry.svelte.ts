@@ -1,7 +1,7 @@
 import { TFile } from "obsidian";
 import RPGDungeonMasterPlugin from "../../rpgMasterPlugin";
 import { MASTER_PLUGIN } from "../capability";
-import { CampaignConfig } from "../interfaces";
+import type { CampaignConfig } from "../interfaces";
 
 export type CampaignRegistry = ReturnType<typeof CampaignRegistry>
 
